@@ -342,16 +342,8 @@ class PipelineRunner:
                     transformed_data = grootboek_records
             
             elif table_name == 'LesDeelname':
-                # Speciale transformatie voor LesDeelname - voeg course_id toe als LesId
-                transformed_data = []
-                for record in raw_data:
-                    course_id = record.get('course_id')
-                    if course_id:
-                        # Voeg LesId toe aan de record
-                        record['LesId'] = course_id
-                        transformed_data.append(record)
-                    else:
-                        logging.warning(f"Geen course_id gevonden in LesDeelname record: {record}")
+                # Gebruik de normale transformer voor LesDeelname
+                transformed_data = self.transformer.transform_table_data(table_name, raw_data)
             
             elif table_name == 'AbonnementStatistieken':
                 transformed_data = []

@@ -180,6 +180,7 @@ class BackfillManager:
         # Only tables with date-based APIs support backfill
         backfillable = [
             'Lessen',  # activity_events with date range
+            'LesDeelname',  # Requires course IDs from past lessons
             'Omzet',   # analytics_revenue with date range
             'GrootboekRekening',  # Part of revenue data
             'AbonnementStatistieken'  # analytics with date range
@@ -314,6 +315,7 @@ class BackfillManager:
         """Extract data for specific table and date range"""
         endpoint_mappings = {
             'Lessen': 'activity_events',
+            'LesDeelname': 'courses_members',  # Special handling required
             'Omzet': 'analytics_revenue',
             'GrootboekRekening': 'analytics_revenue',
             'AbonnementStatistieken': [
@@ -328,7 +330,10 @@ class BackfillManager:
         if not endpoint_name:
             raise ValueError(f"No endpoint mapping for table: {table_name}")
         
-        if isinstance(endpoint_name, list):
+        if table_name == 'LesDeelname':
+            # Special handling for LesDeelname - use the extractor's method
+            return self.extractor._extract_les_deelname_data(start_date, end_date)
+        elif isinstance(endpoint_name, list):
             # Multiple endpoints (AbonnementStatistieken)
             all_data = []
             for endpoint in endpoint_name:

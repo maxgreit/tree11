@@ -271,7 +271,17 @@ class DataTransformer:
             # For now, return empty string
             return ''
         
+        elif transformation == 'course_id_from_context':
+            # Haal course_id uit de raw_record (toegevoegd door data extractor)
+            course_id = raw_record.get('course_id')
+            if course_id:
+                return str(course_id)
+            else:
+                logging.warning(f"Geen course_id gevonden in record voor LesDeelname: {raw_record}")
+                return None
+        
         # Voeg meer aangepaste veld generatoren toe indien nodig
+        logging.warning(f"Onbekende aangepaste veld transformatie: {transformation}")
         return None
     
     def transform_analytics_data(self, endpoint_name: str, raw_data: List[Dict], 
@@ -422,6 +432,18 @@ class DataTransformer:
                     if required and record.get(target_column) is None:
                         if not field_config.get('allow_null', False):
                             raise ValidationError(f"Required field {target_column} is null")
+                
+                # Controleer vereiste custom fields
+                custom_fields = table_config.get('custom_fields', {})
+                for field_name, field_config in custom_fields.items():
+                    required = field_config.get('required', False)
+                    
+                    if required and field_name not in record:
+                        raise ValidationError(f"Missing required custom field: {field_name}")
+                    
+                    if required and record.get(field_name) is None:
+                        if not field_config.get('allow_null', False):
+                            raise ValidationError(f"Required custom field {field_name} is null")
                 
                 valid_records.append(record)
                 

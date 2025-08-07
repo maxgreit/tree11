@@ -524,6 +524,9 @@ class DataExtractor:
                 if endpoint_name == 'google_sheets':
                     # Google Sheets extraction
                     data = self.sheets_extractor.extract_personal_training_data()
+                elif table_name == 'LesDeelname':
+                    # Special handling for LesDeelname - requires course IDs from past lessons
+                    data = self._extract_les_deelname_data()
                 elif isinstance(endpoint_name, list):
                     # Multiple endpoints (like AbonnementStatistieken)
                     data = []
@@ -551,3 +554,92 @@ class DataExtractor:
                 all_data[table_name] = []
         
         return all_data
+    
+    def _extract_les_deelname_data(self, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[Dict]:
+        """
+        Speciale extractie voor LesDeelname - haalt eerst Lessen op en dan voor elke les de members
+        
+        Args:
+            start_date: Optionele startdatum voor historische data
+            end_date: Optionele einddatum voor historische data
+            
+        Returns:
+            Lijst met alle lesdeelname records
+        """
+        logging.info("Speciale extractie voor LesDeelname - haalt course IDs op van Lessen")
+        
+        try:
+            # Eerst Lessen ophalen om course IDs te krijgen
+            if start_date and end_date:
+                logging.info(f"Historische LesDeelname extractie: {start_date} tot {end_date}")
+                lessen_data = self.api_client.extract_endpoint_data('activity_events', start_date=start_date, end_date=end_date)
+            else:
+                # Voor dagelijkse extractie: afgelopen week (vanaf gisteren)
+                from datetime import datetime, timedelta
+                yesterday = datetime.now().date() - timedelta(days=1)
+                week_ago = yesterday - timedelta(days=7)
+                
+                logging.info(f"LesDeelname dagelijkse extractie: {week_ago} tot {yesterday}")
+                lessen_data = self.api_client.extract_endpoint_data('activity_events', start_date=week_ago, end_date=yesterday)
+            
+            if not lessen_data:
+                logging.warning("Geen lessen gevonden voor LesDeelname extractie")
+                return []
+            
+            # Filter lessen die in het verleden liggen (niet vandaag of in de toekomst)
+            from datetime import datetime
+            today = datetime.now().date()
+            past_lessons = []
+            
+            for les in lessen_data:
+                try:
+                    # Parse starttijd van de les
+                    start_tijd_str = les.get('startAt')
+                    if start_tijd_str:
+                        if isinstance(start_tijd_str, str):
+                            # Parse ISO datetime string
+                            start_tijd = datetime.fromisoformat(start_tijd_str.replace('Z', '+00:00'))
+                        else:
+                            start_tijd = start_tijd_str
+                        
+                        # Check of les in het verleden ligt
+                        if start_tijd.date() < today:
+                            past_lessons.append(les)
+                except Exception as e:
+                    logging.warning(f"Fout bij parsen van les datum: {e}")
+                    continue
+            
+            logging.info(f"Gevonden {len(past_lessons)} lessen in het verleden voor LesDeelname extractie")
+            
+            # Voor elke les in het verleden, haal de members op
+            all_les_deelname = []
+            
+            for les in past_lessons:
+                course_id = les.get('id')
+                if not course_id:
+                    logging.warning(f"Geen course ID gevonden voor les: {les}")
+                    continue
+                
+                try:
+                    logging.info(f"Haalt members op voor course: {course_id}")
+                    
+                    # Haal members op voor deze course
+                    members_data = self.api_client.extract_endpoint_data('courses_members', course_id=course_id)
+                    
+                    # Voeg course_id toe aan elke member record
+                    for member in members_data:
+                        member['course_id'] = course_id
+                    
+                    all_les_deelname.extend(members_data)
+                    logging.info(f"{len(members_data)} members gevonden voor course {course_id}")
+                    
+                except Exception as e:
+                    logging.error(f"Fout bij ophalen members voor course {course_id}: {e}")
+                    continue
+            
+            logging.info(f"Totaal {len(all_les_deelname)} lesdeelname records geëxtraheerd")
+            return all_les_deelname
+            
+        except Exception as e:
+            logging.error(f"Fout bij LesDeelname extractie: {e}")
+            raise
