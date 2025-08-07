@@ -1,0 +1,134 @@
+{
+  "schedule": {
+    "daily_run_time": "02:00",
+    "timezone": "Europe/Amsterdam",
+    "run_on_weekends": true,
+    "run_on_holidays": true,
+    "max_execution_time_minutes": 120,
+    "concurrent_table_processing": false
+  },
+  "data_retention": {
+    "log_retention_days": 90,
+    "temp_file_retention_hours": 24,
+    "backup_retention_days": 30,
+    "error_log_retention_days": 365,
+    "audit_log_retention_days": 2555
+  },
+  "update_strategies": {
+    "Leden": {
+      "strategy": "upsert",
+      "frequency": "daily",
+      "batch_size": 1000,
+      "enable_soft_delete": false
+    },
+    "Abonnementen": {
+      "strategy": "replace",
+      "frequency": "weekly",
+      "batch_size": 500,
+      "backup_before_replace": true
+    },
+    "AbonnementStatistieken": {
+      "strategy": "upsert",
+      "frequency": "daily",
+      "batch_size": 2000,
+      "duplicate_handling": "update"
+    },
+    "Lessen": {
+      "strategy": "upsert",
+      "frequency": "daily",
+      "batch_size": 1000,
+      "archive_old_records": true,
+      "archive_after_days": 365
+    },
+    "OpenstaandeFacturen": {
+      "strategy": "replace",
+      "frequency": "daily",
+      "batch_size": 500,
+      "enabled": false,
+      "note": "Disabled due to API error 400"
+    },
+    "Omzet": {
+      "strategy": "upsert",
+      "frequency": "daily",
+      "batch_size": 2000,
+      "duplicate_handling": "update"
+    },
+    "GrootboekRekening": {
+      "strategy": "upsert",
+      "frequency": "weekly",
+      "batch_size": 100,
+      "enable_change_tracking": true
+    },
+    "PersonalTraining": {
+      "strategy": "replace",
+      "frequency": "weekly",
+      "batch_size": 500,
+      "backup_before_replace": true
+    }
+  },
+  "feature_flags": {
+    "enable_data_quality_checks": true,
+    "enable_performance_monitoring": true,
+    "enable_email_notifications": true,
+    "enable_api_response_caching": true,
+    "enable_parallel_processing": false,
+    "enable_dry_run_mode": false,
+    "enable_debug_logging": false
+  },
+  "data_quality": {
+    "max_null_percentage": 50,
+    "min_record_count_threshold": 1,
+    "max_record_count_change_percentage": 25,
+    "enable_anomaly_detection": true,
+    "enable_schema_validation": true,
+    "enable_business_rule_validation": true,
+    "quarantine_invalid_records": true
+  },
+  "performance": {
+    "max_memory_usage_mb": 2048,
+    "enable_query_optimization": true,
+    "connection_pool_size": 10,
+    "api_request_delay_ms": 100,
+    "bulk_operation_threshold": 100
+  },
+  "notifications": {
+    "enabled": true,
+    "email": {
+      "enabled": true,
+      "smtp_server": "${SMTP_SERVER}",
+      "smtp_port": 587,
+      "username": "${SMTP_USERNAME}",
+      "password": "${SMTP_PASSWORD}",
+      "from_address": "${PIPELINE_EMAIL_FROM}",
+      "to_addresses": ["${PIPELINE_EMAIL_TO}"],
+      "use_tls": true
+    },
+    "notification_levels": {
+      "success": true,
+      "warning": true,
+      "error": true,
+      "info": false
+    }
+  },
+  "security": {
+    "encrypt_sensitive_logs": true,
+    "mask_personal_data": true,
+    "audit_all_operations": true,
+    "require_api_token_rotation": false,
+    "token_rotation_days": 90
+  },
+  "development": {
+    "enable_test_mode": false,
+    "use_sample_data": false,
+    "mock_api_responses": false,
+    "skip_database_operations": false,
+    "verbose_logging": false
+  },
+  "monitoring": {
+    "health_check_interval_minutes": 5,
+    "metrics_collection_enabled": true,
+    "performance_tracking_enabled": true,
+    "error_threshold_percentage": 5,
+    "alert_on_execution_time_threshold_minutes": 90
+  }
+} 

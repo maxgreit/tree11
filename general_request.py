@@ -1,0 +1,29 @@
+from dotenv import load_dotenv
+import requests
+import json
+import os
+
+load_dotenv()
+
+token = os.getenv('token')
+
+url = "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/active?period.startDate=2025-07-01&period.endDate=2025-07-31&period.granularity=WEEK&filter.PAYMENT_TYPE=PERIODIC_CUSTOM&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192"
+
+params = {'page': 1, 'size': 10}
+
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers, params=params)
+
+if response.status_code == 200:
+    data = response.json()
+    print(json.dumps(data, indent=4))
+else:
+    print(f"Fout {response.status_code}:")
+    print(response.text)
+    
+    

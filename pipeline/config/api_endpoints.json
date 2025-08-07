@@ -1,0 +1,249 @@
+{
+  "base_config": {
+    "base_url": "https://api.gymly.io/api",
+    "business_id": "df5acf01-8dfd-476b-9ba3-1d939f73fe1e",
+    "location_id": "759cf904-4133-4fd8-af4c-ded2cedb6192",
+    "timeout": 30,
+    "max_retries": 3,
+    "retry_backoff_factor": 2,
+    "rate_limit_requests_per_minute": 60
+  },
+  "auth": {
+    "type": "bearer",
+    "token_env_var": "GYMLY_API_TOKEN",
+    "headers": {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    }
+  },
+  "endpoints": {
+    "users": {
+      "url_template": "{base_url}/v2/businesses/{business_id}/users",
+      "method": "GET",
+      "pagination": {
+        "type": "page_based",
+        "page_param": "page",
+        "size_param": "size",
+        "default_size": 100,
+        "max_size": 1000
+      },
+      "response_type": "paginated",
+      "data_path": "content",
+      "filters": {
+        "location": "{location_id}"
+      },
+      "table_mapping": "Leden"
+    },
+    "memberships": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/memberships",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "array",
+      "data_path": "",
+      "table_mapping": "Abonnementen"
+    },
+    "activity_events": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/activity-events",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "array",
+      "data_path": "",
+      "parameters": {
+        "startDate": "{start_date}",
+        "endDate": "{end_date}",
+        "locations": "{location_id}"
+      },
+      "date_range": {
+        "type": "daily",
+        "days_back": 1,
+        "days_forward": 7
+      },
+      "table_mapping": "Lessen"
+    },
+    "courses_members": {
+      "url_template": "{base_url}/v1/courses/{course_id}/members",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "array",
+      "data_path": "",
+      "parameters": {},
+      "table_mapping": "LesDeelname",
+      "requires_course_ids": true
+    },
+    "invoices_pending": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/invoices",
+      "method": "GET",
+      "pagination": {
+        "type": "page_based",
+        "page_param": "page",
+        "size_param": "size",
+        "default_size": 100,
+        "max_size": 1000
+      },
+      "response_type": "paginated",
+      "data_path": "content",
+      "parameters": {
+        "status": "PENDING"
+      },
+      "table_mapping": "OpenstaandeFacturen",
+      "note": "Currently returns 400 error - needs investigation"
+    },
+    "analytics_revenue": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/analytics/revenue",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "startDate": "{start_date}",
+        "endDate": "{end_date}",
+        "locations": "{location_id}"
+      },
+      "date_range": {
+        "type": "monthly",
+        "months_back": 1
+      },
+      "table_mappings": ["Omzet", "GrootboekRekening"]
+    },
+    "analytics_memberships_new": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/analytics/memberships/new",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "period.startDate": "{start_date}",
+        "period.endDate": "{end_date}",
+        "period.granularity": "DAY",
+        "filter.LOCATION": "{location_id}",
+        "filter.PAYMENT_TYPE": "{payment_type}"
+      },
+      "variants": [
+        {"payment_type": "ONCE"},
+        {"payment_type": "PERIODIC"},
+        {"payment_type": "PERIODIC_CUSTOM"}
+      ],
+      "date_range": {
+        "type": "daily",
+        "days_back": 30
+      },
+      "table_mapping": "AbonnementStatistieken",
+      "category": "Nieuw"
+    },
+    "analytics_memberships_paused": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/analytics/memberships/paused",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "period.startDate": "{start_date}",
+        "period.endDate": "{end_date}",
+        "period.granularity": "DAY",
+        "filter.LOCATION": "{location_id}",
+        "filter.PAYMENT_TYPE": "{payment_type}"
+      },
+      "variants": [
+        {"payment_type": "ONCE"},
+        {"payment_type": "PERIODIC"},
+        {"payment_type": "PERIODIC_CUSTOM"}
+      ],
+      "date_range": {
+        "type": "daily",
+        "days_back": 30
+      },
+      "table_mapping": "AbonnementStatistieken",
+      "category": "Gepauzeerd"
+    },
+    "analytics_memberships_active": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/analytics/memberships/active",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "period.startDate": "{start_date}",
+        "period.endDate": "{end_date}",
+        "period.granularity": "DAY",
+        "filter.LOCATION": "{location_id}",
+        "filter.PAYMENT_TYPE": "{payment_type}"
+      },
+      "variants": [
+        {"payment_type": "ONCE"},
+        {"payment_type": "PERIODIC"},
+        {"payment_type": "PERIODIC_CUSTOM"}
+      ],
+      "date_range": {
+        "type": "daily",
+        "days_back": 30
+      },
+      "table_mapping": "AbonnementStatistieken",
+      "category": "Actief"
+    },
+    "analytics_memberships_expired": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/analytics/memberships/expirations",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "period.startDate": "{start_date}",
+        "period.endDate": "{end_date}",
+        "period.granularity": "DAY",
+        "filter.LOCATION": "{location_id}",
+        "filter.PAYMENT_TYPE": "{payment_type}"
+      },
+      "variants": [
+        {"payment_type": "ONCE"},
+        {"payment_type": "PERIODIC"},
+        {"payment_type": "PERIODIC_CUSTOM"}
+      ],
+      "date_range": {
+        "type": "daily",
+        "days_back": 30
+      },
+      "table_mapping": "AbonnementStatistieken",
+      "category": "Verlopen"
+    }
+  },
+  "google_sheets": {
+    "personal_training": {
+      "spreadsheet_id": "1NENouGIUVqXp4lowiMHIm3oqmcFj3cS1",
+      "sheet_gid": "365999809",
+      "range": "A:D",
+      "credentials_file": "google_sheets_credentials.json",
+      "table_mapping": "PersonalTraining"
+    }
+  },
+  "error_handling": {
+    "ignore_ssl_errors": false,
+    "log_requests": true,
+    "log_responses": false,
+    "handle_rate_limits": true,
+    "retry_on_errors": [500, 502, 503, 504],
+    "fail_on_errors": [400, 401, 403, 404]
+  },
+  "data_quality": {
+    "validate_required_fields": true,
+    "check_data_types": true,
+    "detect_anomalies": true,
+    "max_null_percentage": 50,
+    "min_records_threshold": 1
+  }
+} 

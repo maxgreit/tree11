@@ -1,0 +1,204 @@
+**Leden**
+
+```json
+Endpoint = 
+{
+	"url": "https://api.gymly.io/api/v2/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/users",
+	"response_type": "paginated",
+	"record_count": 5866,
+}
+
+Schema =
+{ 
+	"id": "str",
+  "accountId": "str",
+  "businessId": "str",
+  "primaryLocationId": "str", # Locatie van Tree11: "759cf904-4133-4fd8-af4c-ded2cedb6192"
+  "activeMemberships": "array[str]", # Koppeling met Abonnementen tabel id
+  "active": "bool",
+  "paymentCollectionStrategy": "str", # AUTOMATIC of MANUAL
+  "customerNumber": "str",
+  "createdAt": "str",
+  "updatedAt": "str"
+  }
+```
+
+**Abonnementen**
+
+```json
+Endpoint =
+{
+	"url": "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/memberships",
+  "response_type": "array",
+  "record_count": 137,
+}
+
+Schema =
+{
+	"id": "str",
+  "name": "str",
+  "description": "str",
+  "type": "str",
+  "paymentType": "str",
+  "amount": "float",
+  "currency": "str",
+  "expireDays": "int",
+  "activationStrategy": "ASSIGNMENT",
+  "accessCourseSubscriptionRequired": "bool",
+  "courseTypes": "array[dict]",
+	  "courseTypes.id": "str",
+	  "courseTypes.membershipId": "str", # Dit is self-referencing van de id erboven
+	  "courseTypes.courseTypeId": "str",
+	"consumptionMethod": "str",
+	"contractDuration": "NoneType",
+		"contractDuration.type": "str",
+	  "contractDuration.value": "int",
+  "contractAutoRenewal": "bool",
+  "ledgerGroupId": "c6549d98-798b-4936-a467-9bf9839323a5"
+  "sectie": "str" # Zelf genereren op basis van Google Sheet
+ }
+```
+
+**AbonnementStatistieken**
+
+```json
+Endpoints =
+{
+	"urls": [
+		"https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/new?period.startDate={startDate}&period.endDate={endDate}&period.granularity={period}&filter.PAYMENT_TYPE={Type}&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192",
+		"https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/paused?period.startDate={startDate}&period.endDate={endDate}&period.granularity={period}&filter.PAYMENT_TYPE={Type}&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192",
+		"https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/active?period.startDate={startDate}&period.endDate={endDate}&period.granularity={period}&filter.PAYMENT_TYPE={Type}&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192",
+		"https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/expired?period.startDate={startDate}&period.endDate={endDate}&period.granularity={period}&filter.PAYMENT_TYPE={Type}&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192",
+		] # Period kan het beste op DAY staan
+	"response_type": "object",
+  "record_count": 1,}
+ 
+ Schema =
+{
+	"labels": "array[str]", # Hier zit de datum
+  "series": "array[dict]",
+	  "series[0].name": "str", # Deze is overbodig, dit zegt alleen Data
+	  "series[0].data": "array[int]" # Dit zijn de waarden
+}
+
+Deze moet wel even omgebouwd worden, het mooist zou de volgende structuur zijn:
+
+{
+	"categorie": "str" # Nieuw, Gepauzeerd, Verlopen of Actief
+	"type": "str" # Eenmalig of Periodiek, in Gymly ONCE of PERIODIC - zo de url's ook filteren
+	"datum": "date",
+	"aantal": "int"
+}
+```
+
+**Lessen**
+
+```json
+Endpoint =
+{
+	"url": "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/activity-events?startDate={startDate}&endDate={endDate}&locations=759cf904-4133-4fd8-af4c-ded2cedb6192",
+  "response_type": "array",
+  "record_count": 46
+}
+
+Schema =
+{
+	"id": "str",
+  "name": "str",
+  "startAt": "datetime",
+  "endAt": "datetime",
+  "capacity": "int",
+  "memberCount": "int",
+  "trialCount": "int",
+  "businessLocationId": "str",
+  "activities": "array[str]",
+  "recurring": "bool",
+  "createdAt": "datetime",
+  "updatedAt": "datetime",
+}
+```
+
+**Openstaande Facturen**
+
+```json
+Endpoint =
+{
+	"url": "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/invoices?page=0&size=100&status=PENDING",
+  "response_type": "object",
+  "record_count": 1,
+  "totalElements": 260,
+  "totalPages": 3
+}
+
+Schema =
+{
+	"id": "str",
+  "number": "int",
+  "numberFormatted": "str",
+  "status": "str",
+  "type": "str",
+  "year": "int",
+  "businessId": "str",
+  "businessLocationId": "str", # Locatie van Tree11
+  "businessUser": "array[dict]"
+	  "businessUser.id": "str"
+	  "businessUser.accountId": "str"
+	  "businessUser.businessId": "str"
+  "totalAmount": "float",
+  "createdAt": "datetime"
+  
+```
+
+**Omzet**
+
+```json
+Endpoint =
+{
+	"url": "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/revenue?startDate={date}&endDate={date}&locations=759cf904-4133-4fd8-af4c-ded2cedb6192",
+	"response_type": "object",
+  "record_count": 1
+}
+
+Schema =
+{
+	"date": "date" # Dag niveau
+	"grootboekRekeningId": "str",
+	"type": "str", # SUBSCRIPTION / POS / MANUAL
+	"omzet": "float"
+```
+
+**GrootboekRekening**
+
+```json
+Endpoint =
+{
+	"url": "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/revenue?startDate={date}&endDate={date}&locations=759cf904-4133-4fd8-af4c-ded2cedb6192",
+	"response_type": "object",
+  "record_count": 1
+}
+
+Schema =
+{
+	"ledgerAccounts":
+		"id": "str",
+		"key": "str",
+		"label": "str"
+}
+```
+
+**PersonalTraining**
+
+```json
+GoogleSheet =
+{
+	"url": "https://docs.google.com/spreadsheets/d/1NENouGIUVqXp4lowiMHIm3oqmcFj3cS1/edit?gid=365999809#gid=365999809"
+}
+
+Schema =
+{
+	"Voornaam": "str",
+	"Achternaam": "str",
+	"Datum": "date",
+	"Uren": "int"
+}
+```

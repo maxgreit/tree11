@@ -1,0 +1,13 @@
+memberships = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/memberships #toegevoegd
+members = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/data-views/members #toegevoegd
+users = https://api.gymly.io/api/v1/user/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/users #toegevoegd
+lead_stages = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/lead-stages #toegevoegd
+leads = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/data-views/leads #toegevoegd
+assignees = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/leads/assignees #toegevoegd
+revenue = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/revenue #toegevoegd
+course_types = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/course-types #toegevoegd
+locations = https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/locations #toegevoegd
+
+leeg:
+- leads
+- members

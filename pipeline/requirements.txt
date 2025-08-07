@@ -1,0 +1,42 @@
+# Tree11 Data Pipeline Dependencies
+# Core framework dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+schedule>=1.2.0
+tenacity>=8.2.0
+
+# Database connectivity
+pyodbc>=4.0.39
+sqlalchemy>=2.0.0
+pandas>=2.0.0
+
+# Google Sheets integration
+google-auth>=2.17.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.1.0
+google-api-python-client>=2.88.0
+
+# Data validation and processing
+pydantic>=2.0.0
+jsonschema>=4.17.0
+
+# Logging and monitoring
+structlog>=23.1.0
+colorama>=0.4.6
+
+# Development and testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Utilities
+tqdm>=4.65.0
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# Optional: Excel support for additional data sources
+openpyxl>=3.1.0
+
+# Optional: Enhanced JSON handling
+ujson>=5.8.0 

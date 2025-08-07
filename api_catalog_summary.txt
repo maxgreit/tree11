@@ -1,0 +1,484 @@
+API CATALOG SUMMARY
+==================
+
+Generated: 2025-07-16
+Total URLs: 17
+
+
+--- API.GYMLY.IO_USERS ---
+Records: 5866
+URL: https://api.gymly.io/api/v2/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/users
+Response Type: paginated
+Schema Structure:
+  ├── accountId: str
+  ├── active: bool
+  ├── activeMemberships: array[str]
+  ├── address.city: str
+  ├── address.country: str
+  ├── address.id: NoneType
+  ├── address.postalCode: str
+  ├── address.street: str
+  ├── businessId: str
+  ├── createdAt: str
+  ├── customerNumber: str
+  ├── dateOfBirth: NoneType
+  ├── email: str
+  ├── firstName: str
+  ├── fullName: str
+  ├── futureMemberships: array[empty]
+  ├── gender: str
+  ├── iban: NoneType
+  ├── id: str
+  ├── insertion: NoneType
+  ├── language: str
+  ├── lastName: str
+  ├── membershipsAwaitingPayment: array[empty]
+  ├── organizationId: NoneType
+  ├── paymentCollectionStrategy: str
+  ├── phoneNumber: str
+  ├── primaryLocationId: str
+  ├── profileImageUrl: NoneType
+  ├── rfid: bool
+  ├── type: str
+  ├── updatedAt: str
+
+--- API.GYMLY.IO_ROOMS ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/rooms
+Response Type: object
+Schema Structure:
+  ├── rooms: array[dict]
+  ├── rooms[0].businessLocationId: str
+  ├── rooms[0].capacity: int
+  ├── rooms[0].courseTypes: array[str]
+  ├── rooms[0].id: str
+  ├── rooms[0].imageUrl: NoneType
+  ├── rooms[0].location: str
+  ├── rooms[0].name: str
+  ├── rooms[0].offsideAddress: NoneType
+  ├── rooms[0].onlineUrl: NoneType
+
+--- API.GYMLY.IO_MEMBERSHIPS ---
+Records: 137
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/memberships
+Response Type: array
+Schema Structure:
+  ├── accessCourseSubscriptionRequired: bool
+  ├── activationStrategy: str
+  ├── amount: float
+  ├── amountFormatted: str
+  ├── consumptionMethod: str
+  ├── contractAutoRenewal: bool
+  ├── contractDuration: NoneType
+  ├── contractDuration.type: str
+  ├── contractDuration.value: int
+  ├── courseTypes: array[dict]
+  ├── courseTypes[0].courseTypeId: str
+  ├── courseTypes[0].id: str
+  ├── courseTypes[0].membershipId: str
+  ├── currency: str
+  ├── customPeriodicInterval: NoneType
+  ├── deleted: bool
+  ├── description: str
+  ├── entries: NoneType
+  ├── entriesControl: str
+  ├── entriesControlCourseTypes: array[empty]
+  ├── expireDays: int
+  ├── id: str
+  ├── ledgerGroupId: str
+  ├── name: str
+  ├── notifications.remindBeforeExpiration: bool
+  ├── notifications.remindBeforeRenewal: bool
+  ├── organizationDetails: NoneType
+  ├── paymentType: str
+  ├── public: bool
+  ├── published: bool
+  ├── registrationFee: NoneType
+  ├── timeslots: array[empty]
+  ├── type: str
+  ├── userAccessibleLocations: array[empty]
+  ├── userBringAFriendGrant: NoneType
+  ├── userCheckinConsumptionRegistration: bool
+  ├── userCheckinTimeoutSeconds: NoneType
+  ├── userLocationAccess: str
+  ├── userMaxAssignments: NoneType
+  ├── userMembershipType: str
+  ├── userPurchasePermission: str
+  ├── vatRate: int
+  ├── visibility: str
+  ├── visibilityLocations: array[empty]
+
+--- DATA_VIEWS_MEMBERS ---
+Records: 2
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/data-views/members
+Response Type: array
+Schema Structure:
+  ├── config: str
+  ├── createdAt: str
+  ├── id: str
+  ├── key: str
+  ├── label: str
+
+--- API.GYMLY.IO_LOCATIONS ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/locations
+Response Type: array
+Schema Structure:
+  ├── address.city: str
+  ├── address.country: str
+  ├── address.id: str
+  ├── address.postalCode: str
+  ├── address.street: str
+  ├── businessId: str
+  ├── companyRegistrationNumber: NoneType
+  ├── createdAt: str
+  ├── currentUtcOffset: int
+  ├── email: NoneType
+  ├── iban: NoneType
+  ├── id: str
+  ├── imageId: str
+  ├── imagePath: str
+  ├── kycStatus: str
+  ├── legalName: NoneType
+  ├── name: str
+  ├── paymentConfigType: str
+  ├── phoneNumber: NoneType
+  ├── publicImageUrl: str
+  ├── published: bool
+  ├── taxId: NoneType
+  ├── timezone: str
+  ├── updatedAt: str
+
+--- API.GYMLY.IO_LEAD_STAGES ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/lead-stages
+Response Type: object
+Schema Structure:
+  ├── leadCounts.0295e1e0-6b06-4e8f-a39a-1426aff1547e: int
+  ├── leadCounts.1765da9f-af2b-4940-bd0d-8139370a0947: int
+  ├── leadCounts.b8e074d7-1903-4d5b-84dc-5a349f291bf8: int
+  ├── leadCounts.e2d27dc8-b834-4d61-8ebb-12c87196abc6: int
+  ├── stages.CANCELLED: array[dict]
+  ├── stages.CANCELLED[0].color.backgroundColor: str
+  ├── stages.CANCELLED[0].color.color: str
+  ├── stages.CANCELLED[0].color.foregroundColor: str
+  ├── stages.CANCELLED[0].createdAt: str
+  ├── stages.CANCELLED[0].id: str
+  ├── stages.CANCELLED[0].name: str
+  ├── stages.CANCELLED[0].order: int
+  ├── stages.CANCELLED[0].status: str
+  ├── stages.CANCELLED[0].updatedAt: str
+  ├── stages.DONE: array[dict]
+  ├── stages.DONE[0].color.backgroundColor: str
+  ├── stages.DONE[0].color.color: str
+  ├── stages.DONE[0].color.foregroundColor: str
+  ├── stages.DONE[0].createdAt: str
+  ├── stages.DONE[0].id: str
+  ├── stages.DONE[0].name: str
+  ├── stages.DONE[0].order: int
+  ├── stages.DONE[0].status: str
+  ├── stages.DONE[0].updatedAt: str
+  ├── stages.IN_PROGRESS: array[dict]
+  ├── stages.IN_PROGRESS[0].color.backgroundColor: str
+  ├── stages.IN_PROGRESS[0].color.color: str
+  ├── stages.IN_PROGRESS[0].color.foregroundColor: str
+  ├── stages.IN_PROGRESS[0].createdAt: str
+  ├── stages.IN_PROGRESS[0].id: str
+  ├── stages.IN_PROGRESS[0].name: str
+  ├── stages.IN_PROGRESS[0].order: int
+  ├── stages.IN_PROGRESS[0].status: str
+  ├── stages.IN_PROGRESS[0].updatedAt: str
+  ├── stages.TODO: array[dict]
+  ├── stages.TODO[0].color.backgroundColor: str
+  ├── stages.TODO[0].color.color: str
+  ├── stages.TODO[0].color.foregroundColor: str
+  ├── stages.TODO[0].createdAt: str
+  ├── stages.TODO[0].id: str
+  ├── stages.TODO[0].name: str
+  ├── stages.TODO[0].order: int
+  ├── stages.TODO[0].status: str
+  ├── stages.TODO[0].updatedAt: str
+
+--- WEBSHOP_ITEMS?PAGE=0&SIZE=100 ---
+Records: 47
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/webshop/items?page=0&size=100
+Response Type: paginated
+Schema Structure:
+  ├── categoryId: str
+  ├── clicks: int
+  ├── discount: NoneType
+  ├── id: str
+  ├── imageId: str
+  ├── imageUrl: str
+  ├── link: str
+  ├── name: str
+  ├── product.originalPrice: float
+  ├── product.price: float
+  ├── status: str
+  ├── type: str
+
+--- API.GYMLY.IO_INVOICES?PAGE=0&SIZE=100 ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/invoices?page=0&size=100&status=PENDINGhttps://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/invoices?page=0&size=100
+Response Type: object
+Schema Structure:
+  ├── correlationId: str
+  ├── error: str
+  ├── path: str
+  ├── status: int
+  ├── timestamp: str
+
+--- API.GYMLY.IO_COURSE_TYPES?PAGE=0&SIZE=100 ---
+Records: 11
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/course-types?page=0&size=100
+Response Type: paginated
+Schema Structure:
+  ├── color: str
+  ├── description: str
+  ├── id: str
+  ├── image: NoneType
+  ├── imageId: str
+  ├── imagePath: str
+  ├── imageUrl: NoneType
+  ├── ledgerGroupId: NoneType
+  ├── name: str
+  ├── options.accessSubscriptionMinutes: int
+  ├── options.price: NoneType
+  ├── options.subscribeCourseMinutes: int
+  ├── options.subscribeDays: int
+  ├── options.trialCta: NoneType
+  ├── options.trialEnabled: bool
+  ├── options.trialSpots: NoneType
+  ├── options.vatRate: NoneType
+  ├── parentCourseTypeId: NoneType
+
+--- WEBSHOP_CATEGORIES?PAGE=0&SIZE=100 ---
+Records: 6
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/webshop/categories?page=0&size=100
+Response Type: paginated
+Schema Structure:
+  ├── id: str
+  ├── name: str
+
+--- API.GYMLY.IO_CALENDARS ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/calendars
+Response Type: object
+Schema Structure:
+  ├── calendars: array[dict]
+  ├── calendars[0].appLayout: str
+  ├── calendars[0].color: str
+  ├── calendars[0].icon: str
+  ├── calendars[0].id: str
+  ├── calendars[0].name: str
+  ├── calendars[0].status: str
+  ├── calendars[0].visibility: str
+
+--- LEADS_ASSIGNEES ---
+Records: 3
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/leads/assignees
+Response Type: array
+Schema Structure:
+  ├── accountId: str
+  ├── businessId: str
+  ├── dateOfBirth: str
+  ├── email: str
+  ├── fullName: str
+  ├── id: str
+  ├── profileImageId: str
+  ├── profileImagePath: str
+
+--- API.GYMLY.IO_ACTIVITY_EVENTS?STARTDATE=2025_07_16&ENDDATE=2025_07_17&LOCATIONS=759CF904_4133_4FD8_AF4C_DED2CEDB6192 ---
+Records: 46
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/activity-events?startDate=2025-07-16&endDate=2025-07-17&locations=759cf904-4133-4fd8-af4c-ded2cedb6192
+Response Type: array
+Schema Structure:
+  ├── activities: array[str]
+  ├── businessLocationId: str
+  ├── calendarId: NoneType
+  ├── capacity: int
+  ├── createdAt: str
+  ├── description: str
+  ├── endAt: str
+  ├── id: str
+  ├── memberCount: int
+  ├── name: str
+  ├── price: NoneType
+  ├── recurring: bool
+  ├── roomId: str
+  ├── startAt: str
+  ├── teachers: array[dict]
+  ├── teachers[0].firstName: str
+  ├── teachers[0].fullName: str
+  ├── teachers[0].id: str
+  ├── teachers[0].insertion: NoneType
+  ├── teachers[0].lastName: str
+  ├── teachers[0].profileImageId: str
+  ├── teachers[0].profileImagePath: str
+  ├── trialCount: int
+  ├── trialSpots: NoneType
+  ├── types: array[empty]
+  ├── updatedAt: str
+  ├── utcOffset: int
+
+--- API.GYMLY.IO_LEADS?SIZE=15&PAGE=0 ---
+Records: 1248
+URL: https://api.gymly.io/api/v2/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/leads?size=15&page=0
+Response Type: paginated
+Schema Structure:
+  ├── activityEvent.id: str
+  ├── activityEvent.name: str
+  ├── activityEvent.startAt: str
+  ├── activityEvent.status: str
+  ├── activityEvent.utcOffset: int
+  ├── assignee: NoneType
+  ├── cancelledAt: NoneType
+  ├── createdAt: str
+  ├── currentStageId: str
+  ├── email: str
+  ├── firstName: str
+  ├── id: str
+  ├── lastName: str
+  ├── locationId: str
+  ├── membershipId: NoneType
+  ├── phoneNumber: NoneType
+  ├── referrer: NoneType
+  ├── source: str
+  ├── totalExpenses: NoneType
+  ├── trials: int
+  ├── updatedAt: str
+
+--- ANALYTICS_REVENUE?STARTDATE=2025_07_01&ENDDATE=2025_07_31&LABEL=PERIODSELECT.THISMONTH&LOCATIONS=759CF904_4133_4FD8_AF4C_DED2CEDB6192 ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/revenue?startDate=2025-07-01&endDate=2025-07-31&label=periodSelect.thisMonth&locations=759cf904-4133-4fd8-af4c-ded2cedb6192
+Response Type: object
+Schema Structure:
+  ├── dailyRevenue: array[dict]
+  ├── dailyRevenue[0].date: str
+  ├── dailyRevenue[0].ledgerAccountId: str
+  ├── dailyRevenue[0].revenue: float
+  ├── dailyRevenue[0].type: str
+  ├── ledgerAccountLocation.0d331181-f05a-4272-9f45-bd9a1c9106fc: str
+  ├── ledgerAccountLocation.1410b547-ec94-446c-a12e-599440a3a5f9: str
+  ├── ledgerAccountLocation.29993033-127b-4094-b3c8-8a7a37e7ccac: str
+  ├── ledgerAccountLocation.2e37942d-7ba8-47a5-bd24-c0f076111d15: str
+  ├── ledgerAccountLocation.391d84c9-a0bb-45f2-8880-369e9f578b75: str
+  ├── ledgerAccountLocation.3dfe8f74-337b-4186-aad6-fe83c1f210f4: str
+  ├── ledgerAccountLocation.4e0ceafe-27a9-449c-986e-6f1009ddbd4b: str
+  ├── ledgerAccountLocation.576742a0-0f99-403b-a5b7-4e5b28ac7be9: str
+  ├── ledgerAccountLocation.5ec6aafe-03c4-4bf2-a480-e2a456ee0201: str
+  ├── ledgerAccountLocation.62ddf8d4-ac04-4e78-9b86-ce3f48f032f8: str
+  ├── ledgerAccountLocation.66f067b5-692d-47ab-b132-4f972c1844ea: str
+  ├── ledgerAccountLocation.692e05e4-247a-4c91-90ae-91f5e26ec152: str
+  ├── ledgerAccountLocation.71c6e680-8e08-4409-a2db-ecc7fed3a2ac: str
+  ├── ledgerAccountLocation.87b15699-f576-4a6e-9e95-e4d7450dbe9f: str
+  ├── ledgerAccountLocation.9027d77c-95d3-4949-98ae-2cae7a88fe4c: str
+  ├── ledgerAccountLocation.a53d0410-9b63-4dbc-bcc9-69469410717c: str
+  ├── ledgerAccountLocation.bc08d175-4496-4318-a3e9-90a78a2265d9: str
+  ├── ledgerAccountLocation.d364e514-d906-4f6c-be23-ae52efb1f66e: str
+  ├── ledgerAccountLocation.f1e335cc-93c4-4ea4-bc5f-b44af7b31b1b: str
+  ├── ledgerAccountLocation.f24245c8-c19a-4a0f-acf5-9d539116bf8a: str
+  ├── ledgerAccounts: array[dict]
+  ├── ledgerAccounts[0].id: str
+  ├── ledgerAccounts[0].key: str
+  ├── ledgerAccounts[0].label: NoneType
+  ├── ledgerAccounts[0].parentLedgerAccountId: NoneType
+  ├── monthlyRevenue: array[dict]
+  ├── monthlyRevenue[0].ledgerAccountId: str
+  ├── monthlyRevenue[0].month: int
+  ├── monthlyRevenue[0].revenue: float
+  ├── monthlyRevenue[0].type: str
+  ├── monthlyRevenue[0].year: int
+  ├── profit: float
+  ├── refundStatistics.totalPerLedgerAccount.391d84c9-a0bb-45f2-8880-369e9f578b75.9: float
+  ├── refundStatistics.vatPerLedgerAccount.391d84c9-a0bb-45f2-8880-369e9f578b75.9: float
+  ├── revenuePerLedgerAccount.0d331181-f05a-4272-9f45-bd9a1c9106fc.9: float
+  ├── revenuePerLedgerAccount.1410b547-ec94-446c-a12e-599440a3a5f9.9: float
+  ├── revenuePerLedgerAccount.29993033-127b-4094-b3c8-8a7a37e7ccac.21: float
+  ├── revenuePerLedgerAccount.2e37942d-7ba8-47a5-bd24-c0f076111d15.9: float
+  ├── revenuePerLedgerAccount.391d84c9-a0bb-45f2-8880-369e9f578b75.9: float
+  ├── revenuePerLedgerAccount.3dfe8f74-337b-4186-aad6-fe83c1f210f4.9: float
+  ├── revenuePerLedgerAccount.4e0ceafe-27a9-449c-986e-6f1009ddbd4b.9: float
+  ├── revenuePerLedgerAccount.576742a0-0f99-403b-a5b7-4e5b28ac7be9.9: float
+  ├── revenuePerLedgerAccount.5ec6aafe-03c4-4bf2-a480-e2a456ee0201.9: float
+  ├── revenuePerLedgerAccount.62ddf8d4-ac04-4e78-9b86-ce3f48f032f8.9: float
+  ├── revenuePerLedgerAccount.66f067b5-692d-47ab-b132-4f972c1844ea.9: float
+  ├── revenuePerLedgerAccount.692e05e4-247a-4c91-90ae-91f5e26ec152.9: float
+  ├── revenuePerLedgerAccount.71c6e680-8e08-4409-a2db-ecc7fed3a2ac.0: float
+  ├── revenuePerLedgerAccount.87b15699-f576-4a6e-9e95-e4d7450dbe9f.21: float
+  ├── revenuePerLedgerAccount.9027d77c-95d3-4949-98ae-2cae7a88fe4c.21: float
+  ├── revenuePerLedgerAccount.a53d0410-9b63-4dbc-bcc9-69469410717c.21: float
+  ├── revenuePerLedgerAccount.bc08d175-4496-4318-a3e9-90a78a2265d9.9: float
+  ├── revenuePerLedgerAccount.d364e514-d906-4f6c-be23-ae52efb1f66e.9: float
+  ├── revenuePerLedgerAccount.f1e335cc-93c4-4ea4-bc5f-b44af7b31b1b.9: float
+  ├── revenuePerLedgerAccount.f24245c8-c19a-4a0f-acf5-9d539116bf8a.21: float
+  ├── totalCancellations.total: float
+  ├── totalCancellations.totalPerLedgerAccount.576742a0-0f99-403b-a5b7-4e5b28ac7be9.9: float
+  ├── totalCancellations.totalPerLedgerAccount.62ddf8d4-ac04-4e78-9b86-ce3f48f032f8.9: float
+  ├── totalCancellations.totalPerLedgerAccount.692e05e4-247a-4c91-90ae-91f5e26ec152.9: float
+  ├── totalCancellations.totalPerVat.9: float
+  ├── totalCancellations.totalVat: float
+  ├── totalCancellations.vatPerLedgerAccount.576742a0-0f99-403b-a5b7-4e5b28ac7be9.9: float
+  ├── totalCancellations.vatPerLedgerAccount.62ddf8d4-ac04-4e78-9b86-ce3f48f032f8.9: float
+  ├── totalCancellations.vatPerLedgerAccount.692e05e4-247a-4c91-90ae-91f5e26ec152.9: float
+  ├── totalChargebacks.total: float
+  ├── totalChargebacks.totalPerLedgerAccount.692e05e4-247a-4c91-90ae-91f5e26ec152.9: float
+  ├── totalChargebacks.totalPerVat.9: float
+  ├── totalChargebacks.totalVat: float
+  ├── totalChargebacks.vatPerLedgerAccount.692e05e4-247a-4c91-90ae-91f5e26ec152.9: float
+  ├── totalPerVat.0: float
+  ├── totalPerVat.21: float
+  ├── totalPerVat.9: float
+  ├── totalRevenue: float
+  ├── totalVat: float
+  ├── vatPerLedgerAccount.0d331181-f05a-4272-9f45-bd9a1c9106fc.9: float
+  ├── vatPerLedgerAccount.1410b547-ec94-446c-a12e-599440a3a5f9.9: float
+  ├── vatPerLedgerAccount.29993033-127b-4094-b3c8-8a7a37e7ccac.21: float
+  ├── vatPerLedgerAccount.2e37942d-7ba8-47a5-bd24-c0f076111d15.9: float
+  ├── vatPerLedgerAccount.391d84c9-a0bb-45f2-8880-369e9f578b75.9: float
+  ├── vatPerLedgerAccount.3dfe8f74-337b-4186-aad6-fe83c1f210f4.9: float
+  ├── vatPerLedgerAccount.4e0ceafe-27a9-449c-986e-6f1009ddbd4b.9: float
+  ├── vatPerLedgerAccount.576742a0-0f99-403b-a5b7-4e5b28ac7be9.9: float
+  ├── vatPerLedgerAccount.5ec6aafe-03c4-4bf2-a480-e2a456ee0201.9: float
+  ├── vatPerLedgerAccount.62ddf8d4-ac04-4e78-9b86-ce3f48f032f8.9: float
+  ├── vatPerLedgerAccount.66f067b5-692d-47ab-b132-4f972c1844ea.9: float
+  ├── vatPerLedgerAccount.692e05e4-247a-4c91-90ae-91f5e26ec152.9: float
+  ├── vatPerLedgerAccount.71c6e680-8e08-4409-a2db-ecc7fed3a2ac.0: float
+  ├── vatPerLedgerAccount.87b15699-f576-4a6e-9e95-e4d7450dbe9f.21: float
+  ├── vatPerLedgerAccount.9027d77c-95d3-4949-98ae-2cae7a88fe4c.21: float
+  ├── vatPerLedgerAccount.a53d0410-9b63-4dbc-bcc9-69469410717c.21: float
+  ├── vatPerLedgerAccount.bc08d175-4496-4318-a3e9-90a78a2265d9.9: float
+  ├── vatPerLedgerAccount.d364e514-d906-4f6c-be23-ae52efb1f66e.9: float
+  ├── vatPerLedgerAccount.f1e335cc-93c4-4ea4-bc5f-b44af7b31b1b.9: float
+  ├── vatPerLedgerAccount.f24245c8-c19a-4a0f-acf5-9d539116bf8a.21: float
+  ├── weeklyRevenue: array[dict]
+  ├── weeklyRevenue[0].ledgerAccountId: str
+  ├── weeklyRevenue[0].revenue: float
+  ├── weeklyRevenue[0].type: str
+  ├── weeklyRevenue[0].weekNumber: int
+  ├── weeklyRevenue[0].year: int
+  ├── yearlyRevenue: array[dict]
+  ├── yearlyRevenue[0].ledgerAccountId: str
+  ├── yearlyRevenue[0].revenue: float
+  ├── yearlyRevenue[0].type: str
+  ├── yearlyRevenue[0].year: int
+
+--- MEMBERSHIPS_NEW?PERIOD.STARTDATE=2025_07_01&PERIOD.ENDDATE=2025_07_31&PERIOD.GRANULARITY=WEEK&FILTER.LOCATION=759CF904_4133_4FD8_AF4C_DED2CEDB6192 ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/new?period.startDate=2025-07-01&period.endDate=2025-07-31&period.granularity=WEEK&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192
+Response Type: object
+Schema Structure:
+  ├── labels: array[str]
+  ├── series: array[dict]
+  ├── series[0].data: array[int]
+  ├── series[0].name: str
+
+--- MEMBERSHIPS_PAUSED?PERIOD.STARTDATE=2025_07_01&PERIOD.ENDDATE=2025_07_31&PERIOD.GRANULARITY=WEEK&FILTER.LOCATION=759CF904_4133_4FD8_AF4C_DED2CEDB6192 ---
+Records: 1
+URL: https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/analytics/memberships/paused?period.startDate=2025-07-01&period.endDate=2025-07-31&period.granularity=WEEK&filter.LOCATION=759cf904-4133-4fd8-af4c-ded2cedb6192
+Response Type: object
+Schema Structure:
+  ├── labels: array[str]
+  ├── series: array[dict]
+  ├── series[0].data: array[int]
+  ├── series[0].name: str

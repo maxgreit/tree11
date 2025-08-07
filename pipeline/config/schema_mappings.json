@@ -1,0 +1,552 @@
+{
+  "tables": {
+    "Leden": {
+      "source_endpoint": "api.gymly.io_users",
+      "update_strategy": "upsert",
+      "primary_key": "Id",
+      "frequency": "daily",
+      "columns": {
+        "id": {
+          "target_column": "Id",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "accountId": {
+          "target_column": "AccountId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "businessId": {
+          "target_column": "BedrijfId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "primaryLocationId": {
+          "target_column": "PrimaireLocatieId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "active": {
+          "target_column": "Actief",
+          "sql_type": "BIT",
+          "transformation": "boolean",
+          "required": true
+        },
+        "paymentCollectionStrategy": {
+          "target_column": "BetalingsVorm",
+          "sql_type": "NVARCHAR(20)",
+          "transformation": "direct",
+          "required": false
+        },
+        "customerNumber": {
+          "target_column": "KlantNummer",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "createdAt": {
+          "target_column": "AangemaaktOp",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        },
+        "updatedAt": {
+          "target_column": "GewijzigdOp",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        }
+      }
+    },
+    "Abonnementen": {
+      "source_endpoint": "api.gymly.io_memberships",
+      "update_strategy": "replace",
+      "primary_key": "AbonnementId",
+      "frequency": "weekly",
+      "columns": {
+        "id": {
+          "target_column": "AbonnementId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "name": {
+          "target_column": "Naam",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": true
+        },
+        "description": {
+          "target_column": "Beschrijving",
+          "sql_type": "NVARCHAR(MAX)",
+          "transformation": "direct",
+          "required": false
+        },
+        "type": {
+          "target_column": "Type",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "paymentType": {
+          "target_column": "BetalingsType",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "amount": {
+          "target_column": "Bedrag",
+          "sql_type": "DECIMAL(10,2)",
+          "transformation": "decimal",
+          "required": false
+        },
+        "currency": {
+          "target_column": "Valuta",
+          "sql_type": "NVARCHAR(3)",
+          "transformation": "direct",
+          "required": false
+        },
+        "expireDays": {
+          "target_column": "VervalPeriode",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        },
+        "activationStrategy": {
+          "target_column": "ActivatieStrategie",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "accessCourseSubscriptionRequired": {
+          "target_column": "AbonnementVereist",
+          "sql_type": "BIT",
+          "transformation": "boolean",
+          "required": false
+        },
+        "consumptionMethod": {
+          "target_column": "ConsumptieMethode",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "contractAutoRenewal": {
+          "target_column": "AutoVerlenging",
+          "sql_type": "BIT",
+          "transformation": "boolean",
+          "required": false
+        },
+        "ledgerGroupId": {
+          "target_column": "GrootboekGroepId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "contractDuration.type": {
+          "target_column": "ContractDuur",
+          "sql_type": "NVARCHAR(20)",
+          "transformation": "direct",
+          "required": false
+        },
+        "contractDuration.value": {
+          "target_column": "ContractPeriode",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        }
+      },
+      "custom_fields": {
+        "Sectie": {
+          "sql_type": "NVARCHAR(100)",
+          "transformation": "google_sheet_lookup",
+          "required": false,
+          "description": "Sectie informatie uit Google Sheet"
+        }
+      }
+    },
+    "LesDeelname": {
+      "source_endpoint": "api.gymly.io_courses_members",
+      "update_strategy": "replace",
+      "primary_key": ["LesId", "AccountId"],
+      "frequency": "daily",
+      "columns": {
+        "id": {
+          "target_column": "AccountId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "type": {
+          "target_column": "Type",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "status": {
+          "target_column": "Status",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "fullName": {
+          "target_column": "Naam",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": false
+        },
+        "attended": {
+          "target_column": "Aanwezig",
+          "sql_type": "BIT",
+          "transformation": "boolean",
+          "required": false
+        }
+      },
+      "custom_fields": {
+        "LesId": {
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "course_id_from_context",
+          "required": true,
+          "description": "CourseId uit de context van de API call"
+        }
+      }
+    },
+    "ActieveAbonnementen": {
+      "source_endpoint": "api.gymly.io_users",
+      "source_field": "activeMemberships",
+      "update_strategy": "replace",
+      "primary_key": ["LedenId", "AbonnementId"],
+      "frequency": "daily",
+      "columns": {
+        "activeMemberships[i].id": {
+          "target_column": "AbonnementId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "activeMemberships[i].name": {
+          "target_column": "Naam",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": false
+        },
+        "activeMemberships[i].status": {
+          "target_column": "Status",
+          "sql_type": "NVARCHAR(20)",
+          "transformation": "direct",
+          "required": false
+        }
+      },
+      "parent_reference": {
+        "field": "id",
+        "target_column": "LedenId",
+        "sql_type": "NVARCHAR(50)"
+      }
+    },
+    "AbonnementStatistieken": {
+      "source_endpoint": "analytics_memberships",
+      "update_strategy": "upsert",
+      "primary_key": ["Datum", "Categorie", "Type"],
+      "frequency": "daily",
+      "columns": {
+        "endpoint_type": {
+          "target_column": "Categorie",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "extract_from_url",
+          "required": true,
+          "mapping": {
+            "new": "Nieuw",
+            "paused": "Gepauzeerd", 
+            "active": "Actief",
+            "expired": "Verlopen"
+          }
+        },
+        "payment_type_filter": {
+          "target_column": "Type",
+          "sql_type": "NVARCHAR(20)",
+          "transformation": "extract_from_url",
+          "required": true,
+          "mapping": {
+            "ONCE": "Eenmalig",
+            "PERIODIC": "Periodiek"
+          }
+        },
+        "labels[i]": {
+          "target_column": "Datum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
+          "required": true
+        },
+        "series[0].data[i]": {
+          "target_column": "Aantal",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        }
+      }
+    },
+    "Lessen": {
+      "source_endpoint": "api.gymly.io_activity_events",
+      "update_strategy": "upsert",
+      "primary_key": "Id",
+      "frequency": "daily",
+      "columns": {
+        "id": {
+          "target_column": "Id",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "name": {
+          "target_column": "Naam",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": false
+        },
+        "startAt": {
+          "target_column": "StartTijd",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        },
+        "endAt": {
+          "target_column": "EindTijd",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        },
+        "capacity": {
+          "target_column": "Capaciteit",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        },
+        "memberCount": {
+          "target_column": "LedenAantal",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        },
+        "trialCount": {
+          "target_column": "ProefledenAantal",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        },
+        "businessLocationId": {
+          "target_column": "BedrijfsLocatieId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "activities": {
+          "target_column": "Activiteiten",
+          "sql_type": "NVARCHAR(MAX)",
+          "transformation": "json_dump",
+          "required": false
+        },
+        "recurring": {
+          "target_column": "Terugkerend",
+          "sql_type": "BIT",
+          "transformation": "boolean",
+          "required": false
+        },
+        "createdAt": {
+          "target_column": "AangemaaktOp",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        },
+        "updatedAt": {
+          "target_column": "GewijzigdOp",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        },
+        "instructors": {
+          "target_column": "Instructeurs",
+          "sql_type": "NVARCHAR(MAX)",
+          "transformation": "json_dump",
+          "required": false
+        }
+      }
+    },
+    "OpenstaandeFacturen": {
+      "source_endpoint": "api.gymly.io_invoices",
+      "update_strategy": "upsert",
+      "primary_key": "Id",
+      "frequency": "daily",
+      "columns": {
+        "id": {
+          "target_column": "Id",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "number": {
+          "target_column": "Nummer",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        },
+        "numberFormatted": {
+          "target_column": "NummerFormatted",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "status": {
+          "target_column": "Status",
+          "sql_type": "NVARCHAR(20)",
+          "transformation": "direct",
+          "required": false
+        },
+        "type": {
+          "target_column": "Type",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "year": {
+          "target_column": "Jaar",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": false
+        },
+        "businessLocationId": {
+          "target_column": "BedrijfsLocatieId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "totalAmount": {
+          "target_column": "TotaalBedrag",
+          "sql_type": "DECIMAL(10,2)",
+          "transformation": "decimal",
+          "required": false
+        },
+        "createdAt": {
+          "target_column": "AangemaaktOp",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": false
+        }
+      }
+    },
+    "Omzet": {
+      "source_endpoint": "analytics_revenue",
+      "update_strategy": "upsert",
+      "primary_key": ["Datum", "GrootboekRekeningId", "Type"],
+      "frequency": "daily",
+      "columns": {
+        "dailyRevenue[i].date": {
+          "target_column": "Datum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
+          "required": true
+        },
+        "dailyRevenue[i].ledgerAccountId": {
+          "target_column": "GrootboekRekeningId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "dailyRevenue[i].type": {
+          "target_column": "Type",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "dailyRevenue[i].revenue": {
+          "target_column": "Omzet",
+          "sql_type": "DECIMAL(12,2)",
+          "transformation": "decimal",
+          "required": true
+        }
+      }
+    },
+    "GrootboekRekening": {
+      "source_endpoint": "analytics_revenue",
+      "source_field": "ledgerAccounts",
+      "update_strategy": "upsert",
+      "primary_key": "Id",
+      "frequency": "weekly",
+      "columns": {
+        "ledgerAccounts[i].id": {
+          "target_column": "Id",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "ledgerAccounts[i].key": {
+          "target_column": "Sleutel",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
+        "ledgerAccounts[i].label": {
+          "target_column": "Label",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "null_to_empty",
+          "required": false
+        }
+      }
+    },
+    "PersonalTraining": {
+      "source_endpoint": "google_sheets",
+      "source_sheet_id": "1NENouGIUVqXp4lowiMHIm3oqmcFj3cS1",
+      "source_sheet_gid": "365999809",
+      "update_strategy": "replace",
+      "primary_key": ["Voornaam", "Achternaam", "Datum"],
+      "frequency": "weekly",
+      "columns": {
+        "Voornaam": {
+          "target_column": "Voornaam",
+          "sql_type": "NVARCHAR(100)",
+          "transformation": "direct",
+          "required": true
+        },
+        "Achternaam": {
+          "target_column": "Achternaam",
+          "sql_type": "NVARCHAR(100)",
+          "transformation": "direct",
+          "required": true
+        },
+        "Datum": {
+          "target_column": "Datum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
+          "required": true
+        },
+        "Uren": {
+          "target_column": "Uren",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        }
+      }
+    }
+  },
+  "transformations": {
+    "direct": "return value if value is not None else ''",
+    "json_dump": "return json.dumps(value) if value else '[]'",
+    "boolean": "return bool(value) if value is not None else False",
+    "integer": "return int(value) if value is not None else 0",
+    "decimal": "return float(value) if value is not None else 0.0",
+    "iso_datetime": "return datetime.fromisoformat(value.replace('Z', '+00:00')) if value else None",
+    "parse_date": "return datetime.strptime(value, '%Y-%m-%d').date() if value else None",
+    "nested_field": "return get_nested_value(data, field_path)",
+    "null_to_empty": "return value if value is not None else ''",
+    "extract_from_url": "return extract_parameter_from_endpoint_url(url, parameter_name)",
+    "google_sheet_lookup": "return lookup_section_from_google_sheet(membership_name)"
+  },
+  "constants": {
+    "tree11_location_id": "759cf904-4133-4fd8-af4c-ded2cedb6192",
+    "business_id": "df5acf01-8dfd-476b-9ba3-1d939f73fe1e",
+    "default_granularity": "DAY",
+    "date_range_days": 30
+  }
+} 

@@ -1,0 +1,496 @@
+{
+  "endpoint": "users",
+  "record_count": 5866,
+  "nested_schema": {
+    "id": {
+      "type": "str"
+    },
+    "accountId": {
+      "type": "str"
+    },
+    "businessId": {
+      "type": "str"
+    },
+    "fullName": {
+      "type": "str"
+    },
+    "firstName": {
+      "type": "str"
+    },
+    "insertion": {
+      "type": "str"
+    },
+    "lastName": {
+      "type": "str"
+    },
+    "email": {
+      "type": "str"
+    },
+    "phoneNumber": {
+      "type": "str"
+    },
+    "iban": {
+      "type": "str"
+    },
+    "type": {
+      "type": "str"
+    },
+    "primaryLocationId": {
+      "type": "str"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "str"
+        },
+        "street": {
+          "type": "str"
+        },
+        "postalCode": {
+          "type": "str"
+        },
+        "city": {
+          "type": "str"
+        },
+        "country": {
+          "type": "str"
+        }
+      }
+    },
+    "profileImageId": {
+      "type": "str"
+    },
+    "activeMemberships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "str"
+          },
+          "businessUserId": {
+            "type": "str"
+          },
+          "businessUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "str"
+              },
+              "accountId": {
+                "type": "str"
+              },
+              "businessId": {
+                "type": "str"
+              },
+              "fullName": {
+                "type": "str"
+              },
+              "email": {
+                "type": "str"
+              },
+              "profileImageId": {
+                "type": "str"
+              },
+              "dateOfBirth": {
+                "type": "str"
+              },
+              "profileImagePath": {
+                "type": "str"
+              }
+            }
+          },
+          "stampCard": {
+            "type": "bool"
+          },
+          "consumable": {
+            "type": "bool"
+          },
+          "consumptions": {
+            "type": "int"
+          },
+          "consumptionDetails": {
+            "type": "NoneType"
+          },
+          "membership": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "str"
+              },
+              "name": {
+                "type": "str"
+              },
+              "description": {
+                "type": "NoneType"
+              },
+              "type": {
+                "type": "str"
+              },
+              "paymentType": {
+                "type": "str"
+              },
+              "amount": {
+                "type": "float"
+              },
+              "currency": {
+                "type": "str"
+              },
+              "amountFormatted": {
+                "type": "str"
+              },
+              "deleted": {
+                "type": "bool"
+              },
+              "vatRate": {
+                "type": "int"
+              },
+              "entries": {
+                "type": "NoneType"
+              },
+              "entriesControl": {
+                "type": "NoneType"
+              },
+              "entriesControlCourseTypes": {
+                "type": "array",
+                "items": {
+                  "type": "unknown"
+                }
+              },
+              "expireDays": {
+                "type": "int"
+              },
+              "activationStrategy": {
+                "type": "str"
+              },
+              "published": {
+                "type": "bool"
+              },
+              "public": {
+                "type": "bool"
+              },
+              "visibility": {
+                "type": "str"
+              },
+              "visibilityLocations": {
+                "type": "array",
+                "items": {
+                  "type": "unknown"
+                }
+              },
+              "accessCourseSubscriptionRequired": {
+                "type": "bool"
+              },
+              "timeslots": {
+                "type": "array",
+                "items": {
+                  "type": "unknown"
+                }
+              },
+              "courseTypes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "str"
+                    },
+                    "membershipId": {
+                      "type": "str"
+                    },
+                    "courseTypeId": {
+                      "type": "str"
+                    }
+                  }
+                }
+              },
+              "organizationDetails": {
+                "type": "NoneType"
+              },
+              "registrationFee": {
+                "type": "NoneType"
+              },
+              "consumptionMethod": {
+                "type": "str"
+              },
+              "userMembershipType": {
+                "type": "str"
+              },
+              "userCheckinTimeoutSeconds": {
+                "type": "NoneType"
+              },
+              "userLocationAccess": {
+                "type": "str"
+              },
+              "userAccessibleLocations": {
+                "type": "array",
+                "items": {
+                  "type": "unknown"
+                }
+              },
+              "userCheckinConsumptionRegistration": {
+                "type": "bool"
+              },
+              "userBringAFriendGrant": {
+                "type": "NoneType"
+              },
+              "userMaxAssignments": {
+                "type": "NoneType"
+              },
+              "userPurchasePermission": {
+                "type": "str"
+              },
+              "customPeriodicInterval": {
+                "type": "NoneType"
+              },
+              "contractDuration": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "str"
+                  },
+                  "value": {
+                    "type": "int"
+                  }
+                }
+              },
+              "contractAutoRenewal": {
+                "type": "bool"
+              },
+              "notifications": {
+                "type": "object",
+                "properties": {
+                  "remindBeforeRenewal": {
+                    "type": "bool"
+                  },
+                  "remindBeforeExpiration": {
+                    "type": "bool"
+                  }
+                }
+              },
+              "ledgerGroupId": {
+                "type": "str"
+              }
+            }
+          },
+          "active": {
+            "type": "bool"
+          },
+          "paused": {
+            "type": "bool"
+          },
+          "pauseStartDate": {
+            "type": "NoneType"
+          },
+          "pauseEndDate": {
+            "type": "NoneType"
+          },
+          "expired": {
+            "type": "bool"
+          },
+          "amount": {
+            "type": "float"
+          },
+          "fullAmount": {
+            "type": "float"
+          },
+          "expiresAt": {
+            "type": "NoneType"
+          },
+          "activeAt": {
+            "type": "str"
+          },
+          "periodEndDate": {
+            "type": "str"
+          },
+          "cancelledAt": {
+            "type": "NoneType"
+          },
+          "startCollectionAt": {
+            "type": "NoneType"
+          },
+          "awaitingPayment": {
+            "type": "bool"
+          },
+          "nextPaymentAt": {
+            "type": "str"
+          },
+          "firstUsedAt": {
+            "type": "str"
+          },
+          "createdAt": {
+            "type": "str"
+          },
+          "updatedAt": {
+            "type": "str"
+          },
+          "discount": {
+            "type": "NoneType"
+          },
+          "activeDiscount": {
+            "type": "NoneType"
+          },
+          "discounts": {
+            "type": "array",
+            "items": {
+              "type": "unknown"
+            }
+          }
+        }
+      }
+    },
+    "futureMemberships": {
+      "type": "array",
+      "items": {
+        "type": "unknown"
+      }
+    },
+    "membershipsAwaitingPayment": {
+      "type": "array",
+      "items": {
+        "type": "unknown"
+      }
+    },
+    "gender": {
+      "type": "str"
+    },
+    "dateOfBirth": {
+      "type": "str"
+    },
+    "active": {
+      "type": "bool"
+    },
+    "businessLogo": {
+      "type": "NoneType"
+    },
+    "businessIcon": {
+      "type": "NoneType"
+    },
+    "language": {
+      "type": "str"
+    },
+    "customerNumber": {
+      "type": "str"
+    },
+    "createdAt": {
+      "type": "str"
+    },
+    "updatedAt": {
+      "type": "str"
+    },
+    "profileImagePath": {
+      "type": "str"
+    }
+  },
+  "flat_schema": {
+    "id": "str",
+    "accountId": "str",
+    "businessId": "str",
+    "fullName": "str",
+    "firstName": "str",
+    "insertion": "str",
+    "lastName": "str",
+    "email": "str",
+    "phoneNumber": "str",
+    "iban": "str",
+    "type": "str",
+    "primaryLocationId": "str",
+    "address.id": "str",
+    "address.street": "str",
+    "address.postalCode": "str",
+    "address.city": "str",
+    "address.country": "str",
+    "profileImageId": "str",
+    "activeMemberships": "array[dict]",
+    "activeMemberships[0].id": "str",
+    "activeMemberships[0].businessUserId": "str",
+    "activeMemberships[0].businessUser.id": "str",
+    "activeMemberships[0].businessUser.accountId": "str",
+    "activeMemberships[0].businessUser.businessId": "str",
+    "activeMemberships[0].businessUser.fullName": "str",
+    "activeMemberships[0].businessUser.email": "str",
+    "activeMemberships[0].businessUser.profileImageId": "str",
+    "activeMemberships[0].businessUser.dateOfBirth": "str",
+    "activeMemberships[0].businessUser.profileImagePath": "str",
+    "activeMemberships[0].stampCard": "bool",
+    "activeMemberships[0].consumable": "bool",
+    "activeMemberships[0].consumptions": "int",
+    "activeMemberships[0].consumptionDetails": "NoneType",
+    "activeMemberships[0].membership.id": "str",
+    "activeMemberships[0].membership.name": "str",
+    "activeMemberships[0].membership.description": "NoneType",
+    "activeMemberships[0].membership.type": "str",
+    "activeMemberships[0].membership.paymentType": "str",
+    "activeMemberships[0].membership.amount": "float",
+    "activeMemberships[0].membership.currency": "str",
+    "activeMemberships[0].membership.amountFormatted": "str",
+    "activeMemberships[0].membership.deleted": "bool",
+    "activeMemberships[0].membership.vatRate": "int",
+    "activeMemberships[0].membership.entries": "NoneType",
+    "activeMemberships[0].membership.entriesControl": "NoneType",
+    "activeMemberships[0].membership.entriesControlCourseTypes": "array[empty]",
+    "activeMemberships[0].membership.expireDays": "int",
+    "activeMemberships[0].membership.activationStrategy": "str",
+    "activeMemberships[0].membership.published": "bool",
+    "activeMemberships[0].membership.public": "bool",
+    "activeMemberships[0].membership.visibility": "str",
+    "activeMemberships[0].membership.visibilityLocations": "array[empty]",
+    "activeMemberships[0].membership.accessCourseSubscriptionRequired": "bool",
+    "activeMemberships[0].membership.timeslots": "array[empty]",
+    "activeMemberships[0].membership.courseTypes": "array[dict]",
+    "activeMemberships[0].membership.courseTypes[0].id": "str",
+    "activeMemberships[0].membership.courseTypes[0].membershipId": "str",
+    "activeMemberships[0].membership.courseTypes[0].courseTypeId": "str",
+    "activeMemberships[0].membership.organizationDetails": "NoneType",
+    "activeMemberships[0].membership.registrationFee": "NoneType",
+    "activeMemberships[0].membership.consumptionMethod": "str",
+    "activeMemberships[0].membership.userMembershipType": "str",
+    "activeMemberships[0].membership.userCheckinTimeoutSeconds": "NoneType",
+    "activeMemberships[0].membership.userLocationAccess": "str",
+    "activeMemberships[0].membership.userAccessibleLocations": "array[empty]",
+    "activeMemberships[0].membership.userCheckinConsumptionRegistration": "bool",
+    "activeMemberships[0].membership.userBringAFriendGrant": "NoneType",
+    "activeMemberships[0].membership.userMaxAssignments": "NoneType",
+    "activeMemberships[0].membership.userPurchasePermission": "str",
+    "activeMemberships[0].membership.customPeriodicInterval": "NoneType",
+    "activeMemberships[0].membership.contractDuration.type": "str",
+    "activeMemberships[0].membership.contractDuration.value": "int",
+    "activeMemberships[0].membership.contractAutoRenewal": "bool",
+    "activeMemberships[0].membership.notifications.remindBeforeRenewal": "bool",
+    "activeMemberships[0].membership.notifications.remindBeforeExpiration": "bool",
+    "activeMemberships[0].membership.ledgerGroupId": "str",
+    "activeMemberships[0].active": "bool",
+    "activeMemberships[0].paused": "bool",
+    "activeMemberships[0].pauseStartDate": "NoneType",
+    "activeMemberships[0].pauseEndDate": "NoneType",
+    "activeMemberships[0].expired": "bool",
+    "activeMemberships[0].amount": "float",
+    "activeMemberships[0].fullAmount": "float",
+    "activeMemberships[0].expiresAt": "NoneType",
+    "activeMemberships[0].activeAt": "str",
+    "activeMemberships[0].periodEndDate": "str",
+    "activeMemberships[0].cancelledAt": "NoneType",
+    "activeMemberships[0].startCollectionAt": "NoneType",
+    "activeMemberships[0].awaitingPayment": "bool",
+    "activeMemberships[0].nextPaymentAt": "str",
+    "activeMemberships[0].firstUsedAt": "str",
+    "activeMemberships[0].createdAt": "str",
+    "activeMemberships[0].updatedAt": "str",
+    "activeMemberships[0].discount": "NoneType",
+    "activeMemberships[0].activeDiscount": "NoneType",
+    "activeMemberships[0].discounts": "array[empty]",
+    "futureMemberships": "array[empty]",
+    "membershipsAwaitingPayment": "array[empty]",
+    "gender": "str",
+    "dateOfBirth": "str",
+    "active": "bool",
+    "businessLogo": "NoneType",
+    "businessIcon": "NoneType",
+    "language": "str",
+    "customerNumber": "str",
+    "createdAt": "str",
+    "updatedAt": "str",
+    "profileImagePath": "str"
+  }
+}
