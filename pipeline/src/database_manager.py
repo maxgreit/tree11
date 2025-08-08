@@ -42,6 +42,18 @@ class DatabaseManager:
             self.config = load_config(config_path)
             self.engine = self._create_engine()
             logger.info("Database manager initialized - config_file=%s", config_path)
+            # Probeer schema mappings te laden voor fallback PK-informatie
+            try:
+                config_dir = Path(config_path).parent
+                schema_config_path = config_dir / 'schema_mappings.json'
+                if schema_config_path.exists():
+                    self.schema_config = load_config(schema_config_path)
+                    logger.debug("Schema mappings geladen voor PK fallback - path=%s", str(schema_config_path))
+                else:
+                    self.schema_config = None
+            except Exception as e:
+                self.schema_config = None
+                logger.warning("Kon schema mappings niet laden - fallback PK info niet beschikbaar: %s", str(e))
         except Exception as e:
             logger.error("Failed to initialize database manager - error=%s", str(e))
             raise DatabaseError(f"Database initialization failed: {e}")
@@ -181,8 +193,9 @@ class DatabaseManager:
             return schema_exists
             
         except Exception as e:
+            # Geef de connectiefout door zodat de bovenliggende laag de juiste oorzaak ziet
             logger.error(f"Schema existence check failed - schema={self.config['database']['schema']}, error={str(e)}")
-            return False
+            raise DatabaseError(f"Schema existence check failed: {e}")
 
     def check_table_exists(self, table_name: str) -> bool:
         """
@@ -207,8 +220,9 @@ class DatabaseManager:
             return result[0]["table_count"] > 0
             
         except Exception as e:
+            # Geef de connectiefout door zodat de bovenliggende laag de juiste oorzaak ziet
             logger.error(f"Table existence check failed - table={table_name}, error={str(e)}")
-            return False
+            raise DatabaseError(f"Table existence check failed for {table_name}: {e}")
 
     def get_record_count(self, table_name: str) -> int:
         """
@@ -419,7 +433,7 @@ class DatabaseManager:
                 'Instructeurs', 'DatumLaatsteUpdate'
             ],
             'Leden': [
-                'AccountId', 'BedrijfId', 'PrimaireLocatieId', 'Actief',
+                'Id', 'Naam', 'AccountId', 'BedrijfId', 'PrimaireLocatieId', 'Actief',
                 'BetalingsVorm', 'KlantNummer', 'AangemaaktOp', 'GewijzigdOp',
                 'DatumLaatsteUpdate'
             ],
@@ -432,8 +446,8 @@ class DatabaseManager:
                 'ConsumptieMethode', 'AutoVerlenging', 'GrootboekGroepId', 'Sectie', 'DatumLaatsteUpdate'
             ],
             'OpenstaandeFacturen': [
-                'Id', 'Nummer', 'NummerFormatted', 'Status', 'Type', 'Jaar',
-                'BedrijfsLocatieId', 'TotaalBedrag', 'AangemaaktOp', 'DatumLaatsteUpdate'
+                'FactuurId', 'LedenId', 'Bedrag', 'Valuta', 'Status', 'Vervaldatum',
+                'AangemaaktOp', 'DatumLaatsteUpdate'
             ],
             'AbonnementStatistieken': [
                 'Datum', 'Categorie', 'Type', 'Aantal', 'DatumLaatsteUpdate'
@@ -638,6 +652,17 @@ class DatabaseManager:
         except Exception as e:
             logger.warning(f"Could not get primary key from database - table={table_name}, error={str(e)}")
         
+        # Fallback: haal uit schema_mappings.json indien beschikbaar
+        try:
+            if getattr(self, 'schema_config', None):
+                table_cfg = self.schema_config.get('tables', {}).get(table_name, {})
+                pk_cfg = table_cfg.get('primary_key')
+                if isinstance(pk_cfg, str):
+                    return pk_cfg
+                if isinstance(pk_cfg, list) and len(pk_cfg) == 1:
+                    return pk_cfg[0]
+        except Exception:
+            pass
         return ''
 
     def _get_composite_primary_keys(self, table_name: str) -> List[str]:
@@ -671,6 +696,15 @@ class DatabaseManager:
         except Exception as e:
             logger.warning(f"Could not get composite primary keys from database - table={table_name}, error={str(e)}")
         
+        # Fallback: haal uit schema_mappings.json indien beschikbaar
+        try:
+            if getattr(self, 'schema_config', None):
+                table_cfg = self.schema_config.get('tables', {}).get(table_name, {})
+                pk_cfg = table_cfg.get('primary_key')
+                if isinstance(pk_cfg, list) and len(pk_cfg) >= 2:
+                    return pk_cfg
+        except Exception:
+            pass
         return []
 
     def _perform_upsert_composite(self, conn, table_name: str, df: pd.DataFrame):

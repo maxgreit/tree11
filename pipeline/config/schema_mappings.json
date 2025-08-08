@@ -12,6 +12,12 @@
           "transformation": "direct",
           "required": true
         },
+        "fullName": {
+          "target_column": "Naam",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": false
+        },
         "accountId": {
           "target_column": "AccountId",
           "sql_type": "NVARCHAR(50)",
@@ -59,6 +65,57 @@
           "sql_type": "DATETIME2",
           "transformation": "iso_datetime",
           "required": true
+        }
+      }
+    },
+    "AbonnementStatistiekenSpecifiek": {
+      "source_endpoint": "analytics_memberships_specific",
+      "update_strategy": "upsert",
+      "primary_key": ["Datum", "Categorie", "Type", "AbonnementId"],
+      "frequency": "weekly",
+      "columns": {
+        "endpoint_type": {
+          "target_column": "Categorie",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "extract_from_url",
+          "required": true,
+          "mapping": {
+            "new": "Nieuw",
+            "paused": "Gepauzeerd",
+            "active": "Actief",
+            "expirations": "Verlopen"
+          }
+        },
+        "payment_type_filter": {
+          "target_column": "Type",
+          "sql_type": "NVARCHAR(20)",
+          "transformation": "extract_from_url",
+          "required": true,
+          "mapping": {
+            "ONCE": "Eenmalig",
+            "PERIODIC": "Periodiek",
+            "PERIODIC_CUSTOM": "Periodiek_Aangepast"
+          }
+        },
+        "labels[i]": {
+          "target_column": "Datum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
+          "required": true
+        },
+        "series[0].data[i]": {
+          "target_column": "Aantal",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        }
+      },
+      "custom_fields": {
+        "AbonnementId": {
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "membership_id_from_context",
+          "required": true,
+          "description": "AbonnementId uit filter.MEMBERSHIP context"
         }
       }
     },
@@ -170,7 +227,7 @@
     },
     "LesDeelname": {
       "source_endpoint": "api.gymly.io_courses_members",
-      "update_strategy": "replace",
+      "update_strategy": "upsert",
       "primary_key": ["LesId", "AccountId"],
       "frequency": "daily",
       "columns": {
@@ -377,25 +434,25 @@
     "OpenstaandeFacturen": {
       "source_endpoint": "api.gymly.io_invoices",
       "update_strategy": "upsert",
-      "primary_key": "Id",
+      "primary_key": "FactuurId",
       "frequency": "daily",
       "columns": {
         "id": {
-          "target_column": "Id",
+          "target_column": "FactuurId",
           "sql_type": "NVARCHAR(50)",
           "transformation": "direct",
           "required": true
+        },
+        "businessUser.id": {
+          "target_column": "LedenId",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
         },
         "number": {
           "target_column": "Nummer",
           "sql_type": "INT",
           "transformation": "integer",
-          "required": false
-        },
-        "numberFormatted": {
-          "target_column": "NummerFormatted",
-          "sql_type": "NVARCHAR(50)",
-          "transformation": "direct",
           "required": false
         },
         "status": {
@@ -404,28 +461,16 @@
           "transformation": "direct",
           "required": false
         },
-        "type": {
-          "target_column": "Type",
-          "sql_type": "NVARCHAR(50)",
-          "transformation": "direct",
-          "required": false
-        },
-        "year": {
-          "target_column": "Jaar",
-          "sql_type": "INT",
-          "transformation": "integer",
-          "required": false
-        },
-        "businessLocationId": {
-          "target_column": "BedrijfsLocatieId",
-          "sql_type": "NVARCHAR(50)",
-          "transformation": "direct",
-          "required": false
-        },
         "totalAmount": {
-          "target_column": "TotaalBedrag",
+          "target_column": "Bedrag",
           "sql_type": "DECIMAL(10,2)",
           "transformation": "decimal",
+          "required": false
+        },
+        "currency": {
+          "target_column": "Valuta",
+          "sql_type": "NVARCHAR(3)",
+          "transformation": "direct",
           "required": false
         },
         "createdAt": {

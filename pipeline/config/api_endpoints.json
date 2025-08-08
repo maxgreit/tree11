@@ -194,6 +194,42 @@
       "table_mapping": "AbonnementStatistieken",
       "category": "Actief"
     },
+    "analytics_memberships_specific": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/analytics/memberships/{category}",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "period.startDate": "{start_date}",
+        "period.endDate": "{end_date}",
+        "period.granularity": "WEEK",
+        "filter.LOCATION": "{location_id}",
+        "filter.PAYMENT_TYPE": "{payment_type}",
+        "filter.MEMBERSHIP": "{membership_id}"
+      },
+      "variants": [
+        {"category": "new", "payment_type": "ONCE"},
+        {"category": "new", "payment_type": "PERIODIC"},
+        {"category": "new", "payment_type": "PERIODIC_CUSTOM"},
+        {"category": "paused", "payment_type": "ONCE"},
+        {"category": "paused", "payment_type": "PERIODIC"},
+        {"category": "paused", "payment_type": "PERIODIC_CUSTOM"},
+        {"category": "active", "payment_type": "ONCE"},
+        {"category": "active", "payment_type": "PERIODIC"},
+        {"category": "active", "payment_type": "PERIODIC_CUSTOM"},
+        {"category": "expirations", "payment_type": "ONCE"},
+        {"category": "expirations", "payment_type": "PERIODIC"},
+        {"category": "expirations", "payment_type": "PERIODIC_CUSTOM"}
+      ],
+      "date_range": {
+        "type": "daily",
+        "days_back": 30
+      },
+      "table_mapping": "AbonnementStatistiekenSpecifiek"
+    },
     "analytics_memberships_expired": {
       "url_template": "{base_url}/v1/businesses/{business_id}/analytics/memberships/expirations",
       "method": "GET",

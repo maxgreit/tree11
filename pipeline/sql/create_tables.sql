@@ -21,6 +21,7 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Leden' AND schema_id = SCH
 BEGIN
     CREATE TABLE tree11.Leden (
         Id NVARCHAR(50) NOT NULL,
+        Naam NVARCHAR(255) NULL,
         AccountId NVARCHAR(50) NULL,
         BedrijfId NVARCHAR(50) NOT NULL,
         PrimaireLocatieId NVARCHAR(50) NULL,
@@ -194,6 +195,7 @@ IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'OpenstaandeFacturen' AND s
 BEGIN
     CREATE TABLE tree11.OpenstaandeFacturen (
         FactuurId NVARCHAR(50) NOT NULL,
+        Nummer INT NULL,
         LedenId NVARCHAR(50) NULL,
         Bedrag DECIMAL(10,2) NOT NULL,
         Valuta NVARCHAR(3) NULL DEFAULT 'EUR',
@@ -228,6 +230,25 @@ BEGIN
     );
     
     PRINT 'Tabel tree11.PersonalTraining aangemaakt';
+END
+GO
+
+-- =====================================================================
+-- X. ABONNEMENT STATISTIEKEN SPECIFIEK (per Abonnement)
+-- Bron: analytics/memberships (new/paused/active/expirations) met filter.MEMBERSHIP
+-- =====================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AbonnementStatistiekenSpecifiek' AND schema_id = SCHEMA_ID('tree11'))
+BEGIN
+    CREATE TABLE tree11.AbonnementStatistiekenSpecifiek (
+        Datum DATE NOT NULL,
+        Categorie NVARCHAR(50) NOT NULL,
+        Type NVARCHAR(20) NOT NULL,
+        AbonnementId NVARCHAR(50) NOT NULL,
+        Aantal INT NOT NULL DEFAULT 0,
+        DatumLaatsteUpdate DATETIME2 NOT NULL DEFAULT GETDATE()
+    );
+    
+    PRINT 'Tabel tree11.AbonnementStatistiekenSpecifiek aangemaakt';
 END
 GO
 

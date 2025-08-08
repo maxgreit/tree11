@@ -136,6 +136,10 @@ class PipelineRunner:
             if table_name == 'LesDeelname':
                 return self._extract_les_deelname_data(historical, start_date, end_date)
             
+            # Speciale behandeling voor AbonnementStatistiekenSpecifiek - per AbonnementId
+            if table_name == 'AbonnementStatistiekenSpecifiek':
+                return self._extract_abonnement_statistieken_specifiek(historical, start_date, end_date)
+            
             endpoint_name = self._get_endpoint_name_for_table(table_name)
             
             if not endpoint_name:
@@ -293,6 +297,50 @@ class PipelineRunner:
         except Exception as e:
             logging.error(f"Fout bij LesDeelname extractie: {e}")
             raise
+
+    def _extract_abonnement_statistieken_specifiek(self, historical: bool = False, start_date: str = None, end_date: str = None) -> List[Dict]:
+        """
+        Haalt per-abonnement analytics statistieken op voor meerdere categorieën en betalingsvormen.
+        Verwacht dat memberships (Abonnementen) eerst aanwezig zijn om op te itereren.
+        """
+        logging.info("Speciale extractie voor AbonnementStatistiekenSpecifiek - per abonnement")
+
+        try:
+            # Haal lijst van abonnementen op (uit DB of via API). Hier via API om consistent te zijn.
+            memberships = self.extract_table_data('Abonnementen', historical=False)
+            if not memberships:
+                logging.warning("Geen abonnementen gevonden voor specifieke analytics extractie")
+                return []
+
+            endpoint_name = self._get_endpoint_name_for_table('AbonnementStatistiekenSpecifiek')
+
+            all_records: List[Dict] = []
+            for membership in memberships:
+                membership_id = membership.get('AbonnementId') or membership.get('id') or membership.get('Id')
+                if not membership_id:
+                    continue
+
+                # Roep analytics endpoint aan met membership filter
+                logging.info(f"Analytics per abonnement ophalen - membership_id={membership_id}")
+                endpoint_data = self.extractor.api_client.extract_endpoint_data(
+                    endpoint_name,
+                    start_date=datetime.strptime(start_date, '%Y-%m-%d').date() if historical and start_date else None,
+                    end_date=datetime.strptime(end_date, '%Y-%m-%d').date() if historical and end_date else None,
+                    membership_id=membership_id
+                )
+
+                # Voeg membership_id in elke record voor transformatie
+                for record in endpoint_data:
+                    record['membership_id'] = membership_id
+
+                all_records.extend(endpoint_data)
+
+            logging.info(f"Totaal {len(all_records)} records opgehaald voor AbonnementStatistiekenSpecifiek")
+            return all_records
+
+        except Exception as e:
+            logging.error(f"Fout bij specifieke abonnement statistieken extractie: {e}")
+            raise
     
     def _get_endpoint_name_for_table(self, table_name: str) -> Optional[Union[str, List[str]]]:
         """Haalt de API endpoint naam op voor een specifieke tabel"""
@@ -306,6 +354,7 @@ class PipelineRunner:
             'GrootboekRekening': 'analytics_revenue',
             'AbonnementStatistieken': ['analytics_memberships_new', 'analytics_memberships_paused', 
                                      'analytics_memberships_active', 'analytics_memberships_expired'],
+            'AbonnementStatistiekenSpecifiek': 'analytics_memberships_specific',
         }
         return endpoint_mappings.get(table_name)
     

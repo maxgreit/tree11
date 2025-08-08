@@ -111,6 +111,12 @@ def parse_arguments():
         default='Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken'
     )
     
+    parser.add_argument(
+        '--weekly',
+        action='store_true',
+        help='Verwerk historische periode in wekelijkse batches (in plaats van maandelijks)'
+    )
+    
 
     
     return parser.parse_args()
@@ -158,6 +164,33 @@ def split_date_range_by_months(start_date: str, end_date: str) -> List[tuple]:
     return periods
 
 
+def split_date_range_by_weeks(start_date: str, end_date: str) -> List[tuple]:
+    """
+    Splits een datumrange in weekperiodes (ma t/m zo), beginnend bij start_date.
+    De eerste periode loopt van start_date t/m de eerstvolgende zondag.
+    """
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+
+    periods = []
+    current_start = start_dt
+
+    while current_start <= end_dt:
+        # Weekeinde bepalen (zondag = 6)
+        weekday = current_start.weekday()  # ma=0, zo=6
+        days_to_sunday = 6 - weekday
+        current_end = min(current_start + timedelta(days=days_to_sunday), end_dt)
+
+        periods.append((
+            current_start.strftime('%Y-%m-%d'),
+            current_end.strftime('%Y-%m-%d')
+        ))
+
+        current_start = current_end + timedelta(days=1)
+
+    return periods
+
+
 def run_monthly_pipeline(runner: PipelineRunner, start_date: str, end_date: str, 
                         tables: List[str] = None, dry_run: bool = False, 
                         skip_health_checks: bool = False, verbose: bool = False) -> dict:
@@ -199,7 +232,8 @@ def run_monthly_pipeline(runner: PipelineRunner, start_date: str, end_date: str,
             'total_extracted': 0,
             'total_transformed': 0,
             'total_loaded': 0,
-            'errors': []
+            'errors': [],
+            'periodicity': 'monthly'
         }
         
         for i, (period_start, period_end) in enumerate(periods, 1):
@@ -271,6 +305,92 @@ def run_monthly_pipeline(runner: PipelineRunner, start_date: str, end_date: str,
         )
 
 
+def run_weekly_pipeline(runner: PipelineRunner, start_date: str, end_date: str,
+                        tables: List[str] = None, dry_run: bool = False,
+                        skip_health_checks: bool = False, verbose: bool = False) -> dict:
+    """
+    Pipeline voor data met automatische wekelijkse verwerking
+    """
+    if tables is None:
+        tables = ['Lessen']
+
+    # Periodes splitsen in weken indien > 7 dagen
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    total_days = (end_dt - start_dt).days
+
+    logging.debug(f"Wekelijkse pipeline gestart - periode: {start_date} tot {end_date} ({total_days} dagen), tabellen: {tables}")
+
+    if total_days > 7:
+        periods = split_date_range_by_weeks(start_date, end_date)
+        logging.debug(f"Opgesplitst in {len(periods)} wekelijkse periodes")
+
+        all_results = {
+            'status': 'success',
+            'total_periods': len(periods),
+            'periods_processed': 0,
+            'period_results': [],
+            'total_extracted': 0,
+            'total_transformed': 0,
+            'total_loaded': 0,
+            'errors': [],
+            'periodicity': 'weekly'
+        }
+
+        for i, (period_start, period_end) in enumerate(periods, 1):
+            logging.debug(f"Verwerken periode {i}/{len(periods)}: {period_start} tot {period_end}")
+            try:
+                period_result = runner.run_pipeline(
+                    tables=tables,
+                    dry_run=dry_run,
+                    skip_health_checks=skip_health_checks,
+                    historical=True,
+                    start_date=period_start,
+                    end_date=period_end
+                )
+
+                all_results['total_extracted'] += period_result.get('total_extracted', 0)
+                all_results['total_transformed'] += period_result.get('total_transformed', 0)
+                all_results['total_loaded'] += period_result.get('total_loaded', 0)
+
+                if period_result['status'] == 'success':
+                    all_results['periods_processed'] += 1
+                else:
+                    all_results['errors'].append({
+                        'period': f"{period_start} tot {period_end}",
+                        'error': f"Status: {period_result['status']}",
+                        'details': period_result.get('errors', [])
+                    })
+
+                all_results['period_results'].append({
+                    'period': f"{period_start} tot {period_end}",
+                    'result': period_result
+                })
+
+            except Exception as e:
+                all_results['errors'].append({
+                    'period': f"{period_start} tot {period_end}",
+                    'error': str(e)
+                })
+                logging.error(f"Fout bij verwerken periode {period_start} tot {period_end}: {str(e)}")
+
+        if all_results['errors']:
+            all_results['status'] = 'error' if all_results['periods_processed'] == 0 else 'partial_success'
+
+        logging.info(f"Wekelijkse pipeline voltooid - {all_results['periods_processed']}/{all_results['total_periods']} periodes succesvol")
+        logging.info(f"Totaal records: {all_results['total_loaded']} geladen")
+        return all_results
+
+    # Direct verwerken als periode <= 7 dagen
+    return runner.run_pipeline(
+        tables=tables,
+        dry_run=dry_run,
+        skip_health_checks=skip_health_checks,
+        historical=True,
+        start_date=start_date,
+        end_date=end_date
+    )
+
 def show_table_dependencies(runner: PipelineRunner, specific_tables: Optional[List[str]] = None):
     """Toon tabel dependencies en verwerkingsvolgorde"""
     dependencies = runner.get_table_dependencies()
@@ -303,9 +423,11 @@ def print_execution_summary(result: dict):
     """Print een mooie samenvatting van de pipeline uitvoering"""
     logging.info(f"Status: {result['status'].upper()}")
     
-    # Controleer of dit een maandelijkse pipeline resultaat is (alle tabellen per maand)
+    # Periode-gebaseerd resultaat (zowel maandelijks als wekelijks)
     if 'period_results' in result and 'total_periods' in result:
-        logging.info("=== SAMENVATTING MAANDELIJKSE PIPELINE ===")
+        periodicity = result.get('periodicity', 'periodieke')
+        label = 'MAANDELIJKSE' if periodicity == 'monthly' else ('WEKELIJKSE' if periodicity == 'weekly' else 'PERIODIEKE')
+        logging.info(f"=== SAMENVATTING {label} PIPELINE ===")
         logging.info(f"Totaal periodes: {result['total_periods']}")
         logging.info(f"Periodes succesvol verwerkt: {result['periods_processed']}")
         logging.info(f"Totaal geëxtraheerd: {result['total_extracted']:,} records")
@@ -319,11 +441,11 @@ def print_execution_summary(result: dict):
                 period_result = period_info['result']
                 logging.info(f"  {period}: {period_result.get('total_loaded', 0):,} rijen geladen")
         
-        # Errors
         if result.get('errors'):
             logging.error(f"{len(result['errors'])} periode errors:")
             for error in result['errors']:
                 logging.error(f"{error['period']}: {error['error']}")
+        return
     
     # Controleer of dit een lessen route is (alleen lessen)
     elif 'period_results' in result:
@@ -482,8 +604,19 @@ def main():
             end_dt = datetime.strptime(args.end_date, '%Y-%m-%d')
             total_days = (end_dt - start_dt).days
             
-            # Als periode > 31 dagen, verwerk alle tabellen per maand
-            if total_days > 31:
+            # Weekly modus heeft voorrang; anders maandelijks bij >31 dagen
+            if args.weekly:
+                logging.info(f"Wekelijkse modus ingeschakeld - verwerk alle tabellen per week: {specific_tables}")
+                result = run_weekly_pipeline(
+                    runner=runner,
+                    start_date=args.start_date,
+                    end_date=args.end_date,
+                    tables=specific_tables,
+                    dry_run=args.dry_run,
+                    skip_health_checks=args.skip_health_checks,
+                    verbose=args.verbose
+                )
+            elif total_days > 31:
                 logging.info(f"Periode > 31 dagen ({total_days} dagen) - verwerk alle tabellen per maand: {specific_tables}")
                 result = run_monthly_pipeline(
                     runner=runner,

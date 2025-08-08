@@ -265,6 +265,10 @@ class GymlyAPIClient:
             # Add variant metadata to each record
             for record in variant_data:
                 record.update(variant)
+                # Propagate membership_id into each record if present (for specific membership analytics)
+                membership_id = variant_params.get('membership_id')
+                if membership_id:
+                    record['membership_id'] = membership_id
                 
             # Add endpoint metadata (category, etc.)
             if 'category' in endpoint_config:
@@ -471,11 +475,14 @@ class DataExtractor:
             logging.info(f"Historische data extractie: {start_date} tot {end_date}")
             
             # Extract historical data using provided dates
-            return self.api_client.extract_endpoint_data(
+            # Voor specifieke memberships-statistieken moet membership_id doorgegeven worden.
+            # Dat gebeurt via de API client varianten (door het gebruik van variants in endpoint config)
+            data = self.api_client.extract_endpoint_data(
                 endpoint_name,
                 start_date=start_dt,
                 end_date=end_dt
             )
+            return data
         else:
             # Use default date range for daily data
             logging.info("Gebruik standaard datum bereik voor dagelijkse data extractie")

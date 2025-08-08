@@ -280,6 +280,15 @@ class DataTransformer:
                 logging.warning(f"Geen course_id gevonden in record voor LesDeelname: {raw_record}")
                 return None
         
+        elif transformation == 'membership_id_from_context':
+            # Haal membership_id uit de raw_record context (toegevoegd bij specifieke analytics calls)
+            membership_id = raw_record.get('membership_id')
+            if membership_id:
+                return str(membership_id)
+            else:
+                logging.warning(f"Geen membership_id gevonden in record voor AbonnementStatistiekenSpecifiek: {raw_record}")
+                return None
+        
         # Voeg meer aangepaste veld generatoren toe indien nodig
         logging.warning(f"Onbekende aangepaste veld transformatie: {transformation}")
         return None
