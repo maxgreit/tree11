@@ -68,6 +68,7 @@ class PipelineRunner:
             'Lessen': [],
             'LesDeelname': ['Lessen'], # LesDeelname depends on Lessen
             'AbonnementStatistieken': [],
+            'AbonnementStatistiekenSpecifiek': ['Abonnementen'],
             'OpenstaandeFacturen': [],
             'PersonalTraining': []
         }

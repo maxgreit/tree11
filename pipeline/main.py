@@ -107,8 +107,8 @@ def parse_arguments():
     parser.add_argument(
         '--historical-tables',
         type=str,
-        help='Kommagescheiden lijst van tabellen voor historische data (standaard: Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken)',
-        default='Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken'
+        help='Kommagescheiden lijst van tabellen voor historische data (standaard: Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken,AbonnementStatistiekenSpecifiek)',
+        default='Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken,AbonnementStatistiekenSpecifiek'
     )
     
     parser.add_argument(
