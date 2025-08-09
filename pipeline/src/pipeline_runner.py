@@ -323,10 +323,18 @@ class PipelineRunner:
 
                 # Roep analytics endpoint aan met membership filter
                 logging.info(f"Analytics per abonnement ophalen - membership_id={membership_id}")
+                # Bepaal datumrange
+                if historical and start_date and end_date:
+                    sdt = datetime.strptime(start_date, '%Y-%m-%d').date()
+                    edt = datetime.strptime(end_date, '%Y-%m-%d').date()
+                else:
+                    # Gebruik default datumrange voor deze endpoint (config: daily 30 dagen, granularity WEEK)
+                    sdt, edt = self.extractor.api_client.get_date_range_for_endpoint(endpoint_name)
+
                 endpoint_data = self.extractor.api_client.extract_endpoint_data(
                     endpoint_name,
-                    start_date=datetime.strptime(start_date, '%Y-%m-%d').date() if historical and start_date else None,
-                    end_date=datetime.strptime(end_date, '%Y-%m-%d').date() if historical and end_date else None,
+                    start_date=sdt,
+                    end_date=edt,
                     membership_id=membership_id
                 )
 
@@ -439,6 +447,11 @@ class PipelineRunner:
                             logging.warning(f"Fout bij het transformeren van analytics gegevens voor endpoint {endpoint} - fout: {str(e)}")
                 
                 logging.info(f"AbonnementStatistieken transformatie voltooid - totaal aantal rijen: {len(transformed_data)}")
+            
+            elif table_name == 'AbonnementStatistiekenSpecifiek':
+                # Gebruik specifieke transformatie voor per-abonnement analytics
+                transformed_data = self.transformer.transform_analytics_specific_data(raw_data)
+                logging.info(f"AbonnementStatistiekenSpecifiek transformatie voltooid - totaal aantal rijen: {len(transformed_data)}")
             
             else:   
                 # Standaard transformatie

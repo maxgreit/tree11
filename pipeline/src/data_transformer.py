@@ -234,9 +234,17 @@ class DataTransformer:
                 return str(value) if value is not None else ''
             
             elif transformation == 'extract_from_url':
-                endpoint_category = field_config.get('endpoint_category')
+                # Gebruik contextuele velden uit de record om een categorie/type te bepalen
+                # Voorkeur: endpoint_category (indien door extractor gezet), anders variant 'category',
+                # anders endpoint_type of de ruwe waarde zelf
                 mapping = field_config.get('mapping', {})
-                return mapping.get(endpoint_category, endpoint_category)
+                candidate = (
+                    raw_record.get('endpoint_category')
+                    or raw_record.get('category')
+                    or raw_record.get('endpoint_type')
+                    or value
+                )
+                return mapping.get(candidate, candidate)
             
             elif transformation == 'google_sheet_lookup':
                 # TODO: Implement Google Sheet lookup for sectie
@@ -359,6 +367,73 @@ class DataTransformer:
         # Converteer terug naar lijst
         transformed_records = list(date_payment_data.values())
         
+        return transformed_records
+
+    def transform_analytics_specific_data(self, raw_data: List[Dict]) -> List[Dict]:
+        """
+        Transformatie voor per-abonnement analytics (AbonnementStatistiekenSpecifiek).
+        Verwacht records met structuur vergelijkbaar met analytics endpoints:
+        - 'labels': lijst van datums (YYYY-MM-DD)
+        - 'series'[0]['data']: lijst van aantallen
+        - 'category': new|paused|active|expirations
+        - 'payment_type_filter': ONCE|PERIODIC|PERIODIC_CUSTOM
+        - 'membership_id': AbonnementId
+        """
+        transformed_records: List[Dict] = []
+
+        # Groepeer per (datum, type, categorie, abonnement)
+        aggregated: Dict[tuple, Dict] = {}
+
+        for rec in raw_data:
+            try:
+                labels = rec.get('labels', [])
+                series_list = rec.get('series', [])
+                if not series_list:
+                    continue
+                data_points = series_list[0].get('data', [])
+
+                # Bepaal mappings
+                cat_map = {
+                    'new': 'Nieuw',
+                    'paused': 'Gepauzeerd',
+                    'active': 'Actief',
+                    'expirations': 'Verlopen'
+                }
+                pay_map = {
+                    'ONCE': 'Eenmalig',
+                    'PERIODIC': 'Periodiek',
+                    'PERIODIC_CUSTOM': 'Periodiek_Aangepast'
+                }
+
+                category_raw = rec.get('category') or rec.get('endpoint_category')
+                category = cat_map.get(category_raw, 'Onbekend')
+                ptype_raw = rec.get('payment_type_filter')
+                mapped_type = pay_map.get(ptype_raw, 'Onbekend')
+                abonnement_id = rec.get('membership_id')
+
+                for lbl, val in zip(labels, data_points):
+                    try:
+                        datum = datetime.strptime(lbl, '%Y-%m-%d').date()
+                    except Exception:
+                        # Sla over als de datum niet parsebaar is
+                        continue
+
+                    key = (datum, category, mapped_type, abonnement_id)
+                    if key not in aggregated:
+                        aggregated[key] = {
+                            'Datum': datum,
+                            'Categorie': category,
+                            'Type': mapped_type,
+                            'AbonnementId': abonnement_id,
+                            'Aantal': 0,
+                            'DatumLaatsteUpdate': datetime.now()
+                        }
+                    aggregated[key]['Aantal'] += int(val) if val is not None else 0
+
+            except Exception as e:
+                logging.warning(f"Fout bij transformeren van specifieke analytics record: {e}")
+
+        transformed_records = list(aggregated.values())
         return transformed_records
     
     def transform_revenue_data(self, raw_data: List[Dict]) -> tuple[List[Dict], List[Dict]]:

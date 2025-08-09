@@ -102,9 +102,9 @@ class GymlyAPIClient:
                         formatted_value = param_value.format(**format_params)
                         params[param_name] = formatted_value
                     except (KeyError, ValueError) as e:
-                        logging.warning(f"Failed to format parameter {param_name}={param_value}: {e}")
-                        # Use original value if formatting fails
-                        params[param_name] = param_value
+                        # Als placeholder niet kan worden ingevuld (bijv. start_date ontbreekt), sla deze parameter over
+                        logging.debug(f"Skipping parameter {param_name} because value is missing: {e}")
+                        continue
                 else:
                     params[param_name] = param_value
         
@@ -114,7 +114,10 @@ class GymlyAPIClient:
                 params[key] = value
         
         if params:
-            url += '?' + urlencode(params)
+            # Filter eventuele niet-ingevulde placeholders die toch zijn blijven staan
+            safe_params = {k: v for k, v in params.items() if not (isinstance(v, str) and v.startswith('{') and v.endswith('}'))}
+            if safe_params:
+                url += '?' + urlencode(safe_params)
         
         return url
     

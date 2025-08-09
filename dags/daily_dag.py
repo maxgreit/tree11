@@ -26,7 +26,7 @@ dag = DAG(
     'tree11_daily_dag_v01',
     default_args=default_args,
     description='Data update',
-    schedule_interval="0 8 * * *",
+    schedule_interval="0 7 * * *",
     catchup=False,
 )
 
