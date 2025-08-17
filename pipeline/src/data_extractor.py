@@ -260,7 +260,33 @@ class GymlyAPIClient:
         
         # Handle endpoint variants (for analytics endpoints)
         variants = endpoint_config.get('variants', [{}])
-        
+
+        # Optimalisatie: filter variants als specifieke category/payment_type is gevraagd
+        requested_category = kwargs.get('category')
+        requested_payment_type = kwargs.get('payment_type')
+
+        if variants and (requested_category is not None or requested_payment_type is not None):
+            filtered_variants = []
+            for v in variants:
+                matches = True
+                if requested_category is not None and v.get('category') is not None:
+                    matches = matches and (v.get('category') == requested_category)
+                if requested_payment_type is not None and v.get('payment_type') is not None:
+                    matches = matches and (v.get('payment_type') == requested_payment_type)
+                if matches:
+                    filtered_variants.append(v)
+
+            # Als er geen matchende varianten zijn, maak een enkele variant met de gevraagde waarden
+            if not filtered_variants:
+                single_variant = {}
+                if requested_category is not None:
+                    single_variant['category'] = requested_category
+                if requested_payment_type is not None:
+                    single_variant['payment_type'] = requested_payment_type
+                filtered_variants = [single_variant]
+
+            variants = filtered_variants
+
         for variant in variants:
             variant_params = {**url_params, **variant, **kwargs}
             variant_data = self._extract_variant_data(endpoint_name, variant_params)

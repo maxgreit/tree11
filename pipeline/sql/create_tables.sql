@@ -252,4 +252,50 @@ BEGIN
 END
 GO
 
+-- =====================================================================
+-- 11. UITBETALINGEN (Payouts)
+-- Bron: api.gymly.io_payouts
+-- =====================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Uitbetalingen' AND schema_id = SCHEMA_ID('tree11'))
+BEGIN
+    CREATE TABLE tree11.Uitbetalingen (
+        UitbetalingID NVARCHAR(50) NOT NULL,
+        Datum DATETIME2 NOT NULL,
+        Betalingen INT NOT NULL DEFAULT 0,
+        Chargebacks INT NOT NULL DEFAULT 0,
+        Refunds INT NOT NULL DEFAULT 0,
+        NettoBedrag DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        BrutoBedrag DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        ChargebackBedrag DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        RefundBedrag DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        CommissieBedrag DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        Status NVARCHAR(50) NOT NULL,
+        DatumLaatsteUpdate DATETIME2 NOT NULL DEFAULT GETDATE()
+    );
+    
+    PRINT 'Tabel tree11.Uitbetalingen aangemaakt';
+END
+GO
+
+-- =====================================================================
+-- 12. PRODUCTVERKOPEN (Product Sales)
+-- Bron: api.gymly.io_daily_revenue
+-- =====================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductVerkopen' AND schema_id = SCHEMA_ID('tree11'))
+BEGIN
+    CREATE TABLE tree11.ProductVerkopen (
+        ProductVerkopenID INT IDENTITY(1,1) NOT NULL,
+        Datum DATE NOT NULL,
+        Product NVARCHAR(255) NOT NULL,
+        ProductID NVARCHAR(50) NOT NULL,
+        Aantal INT NOT NULL DEFAULT 0,
+        DatumLaatsteUpdate DATETIME2 NOT NULL DEFAULT GETDATE(),
+        CONSTRAINT PK_ProductVerkopen PRIMARY KEY (ProductVerkopenID),
+        CONSTRAINT IX_ProductVerkopen_Datum_Product UNIQUE (Datum, ProductID)
+    );
+    
+    PRINT 'Tabel tree11.ProductVerkopen aangemaakt';
+END
+GO
+
 PRINT 'Alle tabellen succesvol aangemaakt!'; 

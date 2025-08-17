@@ -72,7 +72,7 @@
       "source_endpoint": "analytics_memberships_specific",
       "update_strategy": "upsert",
       "primary_key": ["Datum", "Categorie", "Type", "AbonnementId"],
-      "frequency": "weekly",
+      "frequency": "daily",
       "columns": {
         "endpoint_type": {
           "target_column": "Categorie",
@@ -433,7 +433,7 @@
     },
     "OpenstaandeFacturen": {
       "source_endpoint": "api.gymly.io_invoices",
-      "update_strategy": "upsert",
+      "update_strategy": "replace",
       "primary_key": "FactuurId",
       "frequency": "daily",
       "columns": {
@@ -568,6 +568,112 @@
         },
         "Uren": {
           "target_column": "Uren",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        }
+      }
+    },
+    "Uitbetalingen": {
+      "source_endpoint": "payouts",
+      "update_strategy": "replace",
+      "primary_key": "UitbetalingID",
+      "frequency": "daily",
+      "columns": {
+        "payout.id": {
+          "target_column": "UitbetalingID",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "payout.date": {
+          "target_column": "Datum",
+          "sql_type": "DATETIME2",
+          "transformation": "iso_datetime",
+          "required": true
+        },
+        "payout.summary.paymentCount": {
+          "target_column": "Betalingen",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        },
+        "payout.summary.chargebackCount": {
+          "target_column": "Chargebacks",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        },
+        "payout.summary.refundCount": {
+          "target_column": "Refunds",
+          "sql_type": "INT",
+          "transformation": "integer",
+          "required": true
+        },
+        "payout.summary.totalNetAmount": {
+          "target_column": "NettoBedrag",
+          "sql_type": "DECIMAL(12,2)",
+          "transformation": "decimal",
+          "required": true
+        },
+        "payout.summary.totalGrossAmount": {
+          "target_column": "BrutoBedrag",
+          "sql_type": "DECIMAL(12,2)",
+          "transformation": "decimal",
+          "required": true
+        },
+        "payout.summary.totalChargebackAmount": {
+          "target_column": "ChargebackBedrag",
+          "sql_type": "DECIMAL(12,2)",
+          "transformation": "decimal",
+          "required": true
+        },
+        "payout.summary.totalRefundAmount": {
+          "target_column": "RefundBedrag",
+          "sql_type": "DECIMAL(12,2)",
+          "transformation": "decimal",
+          "required": true
+        },
+        "payout.summary.totalCommissionFeeAmount": {
+          "target_column": "CommissieBedrag",
+          "sql_type": "DECIMAL(10,2)",
+          "transformation": "decimal",
+          "required": true
+        },
+        "payout.status": {
+          "target_column": "Status",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        }
+      }
+    },
+    "ProductVerkopen": {
+      "source_endpoint": "daily_revenue",
+      "update_strategy": "upsert",
+      "primary_key": ["Datum", "ProductID"],
+      "frequency": "daily",
+      "columns": {
+        "dailyRevenue.date": {
+          "target_column": "Datum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
+          "required": true
+        },
+        "SalesPerProduct.name": {
+          "target_column": "Product",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": true
+        },
+        "SalesPerProduct.id": {
+          "target_column": "ProductID",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": true
+        },
+        "SalesPerProduct.sales": {
+          "target_column": "Aantal",
           "sql_type": "INT",
           "transformation": "integer",
           "required": true

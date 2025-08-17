@@ -24,14 +24,16 @@
     "Abonnementen": {
       "strategy": "replace",
       "frequency": "weekly",
-      "batch_size": 500,
-      "backup_before_replace": true
+      "batch_size": 100,
+      "backup_before_replace": true,
+      "note": "Batch size verlaagd om SQL Server parameter limiet te vermijden"
     },
     "AbonnementStatistieken": {
       "strategy": "upsert",
-      "frequency": "daily",
+      "frequency": "weekly",
       "batch_size": 2000,
-      "duplicate_handling": "update"
+      "duplicate_handling": "update",
+      "note": "Uit standaard dagelijkse pipeline gehaald, maar kan handmatig worden opgehaald met --tables"
     },
     "Lessen": {
       "strategy": "upsert",
@@ -64,6 +66,20 @@
       "frequency": "weekly",
       "batch_size": 500,
       "backup_before_replace": true
+    },
+    "Uitbetalingen": {
+      "strategy": "replace",
+      "frequency": "daily",
+      "batch_size": 5000,
+      "backup_before_replace": true,
+      "note": "Geoptimaliseerd voor bulk loading van grote datasets"
+    },
+    "ProductVerkopen": {
+      "strategy": "upsert",
+      "frequency": "daily",
+      "batch_size": 1000,
+      "duplicate_handling": "update",
+      "note": "Dagelijkse product verkopen met upsert strategie"
     }
   },
   "feature_flags": {

@@ -13,12 +13,42 @@ Deze pipeline haalt automatisch data op van verschillende bronnen, transformeert
 ### Database Tabellen
 - `Leden` - Alle ledeninformatie (5.866+ records)
 - `Abonnementen` - Abonnement types en prijzen (137 types)
-- `AbonnementStatistieken` - Dagelijkse abonnement bewegingen
+- `AbonnementStatistieken` - Dagelijkse abonnement bewegingen (handmatig op te halen met --tables)
 - `Lessen` - Les planning en bezetting (46+ per dag)
 - `Omzet` - Dagelijkse omzet cijfers
 - `GrootboekRekening` - Financiële categorieën
 - `OpenstaandeFacturen` - Nog te betalen facturen
 - `PersonalTraining` - PT sessies en uren
+- `Uitbetalingen` - Uitbetalingen en transactie overzichten
+- `ProductVerkopen` - Dagelijkse product verkopen per product
+
+## 📝 Recente Wijzigingen
+
+### Pipeline Optimalisatie (Laatste Update)
+- **AbonnementStatistieken** is uit de standaard dagelijkse pipeline gehaald om de uitvoeringstijd te verkorten
+- **Tijdsperioden aangepast** voor betere performance:
+  - `Lessen`: van 1 dag terug + 7 dagen vooruit → 7 dagen terug
+  - `LesDeelname`: van 7 dagen terug → 7 dagen terug (behouden)
+  - `AbonnementStatistiekenSpecifiek`: van 30 dagen terug → 7 dagen terug
+- **AbonnementStatistieken** kan nog steeds handmatig worden opgehaald met: `python main.py --tables AbonnementStatistieken`
+
+### Nieuwe Functionaliteit (Laatste Update)
+- **Uitbetalingen** tabel toegevoegd voor payout data van Gymly API
+- **Nieuwe kolommen**: UitbetalingID, Datum, Betalingen, Chargebacks, Refunds, NettoBedrag, BrutoBedrag, ChargebackBedrag, RefundBedrag, CommissieBedrag, Status
+- **Uitbetalingen** wordt standaard meegenomen in de dagelijkse pipeline
+- **Handmatig ophalen** mogelijk met: `python main.py --tables Uitbetalingen`
+
+- **ProductVerkopen** tabel toegevoegd voor dagelijkse product verkopen
+- **Nieuwe kolommen**: Datum, Product, ProductID, Aantal
+- **ProductVerkopen** wordt standaard meegenomen in de dagelijkse pipeline (afgelopen week)
+- **Handmatig ophalen** mogelijk met: `python main.py --tables ProductVerkopen`
+
+### Performance Optimalisaties (Laatste Update)
+- **Database loading geoptimaliseerd** voor grote datasets (>1000 records)
+- **Bulk operaties** implementeren TRUNCATE + BULK INSERT voor replace strategie
+- **Chunked processing** met 5000 records per batch voor betere memory management
+- **Index management** tijdelijk uitschakelen tijdens bulk loading voor snellere performance
+- **Verwachte verbetering**: 3-5x snellere database loading voor grote tabellen
 
 ## 🚀 Snelle Start
 

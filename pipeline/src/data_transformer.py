@@ -364,8 +364,17 @@ class DataTransformer:
                 except Exception as e:
                     logging.warning(f"Fout bij transformeren van analytics record - label={label}, waarde={value}, fout: {str(e)}")
         
-        # Converteer terug naar lijst
+        # Converteer terug naar lijst en voeg weergave-datum toe (dd-mm-yyyy)
         transformed_records = list(date_payment_data.values())
+        for rec in transformed_records:
+            try:
+                if isinstance(rec.get('Datum'), datetime):
+                    rec['DatumWeergave'] = rec['Datum'].strftime('%d-%m-%Y')
+                else:
+                    # Datum is een date
+                    rec['DatumWeergave'] = rec['Datum'].strftime('%d-%m-%Y') if rec.get('Datum') else None
+            except Exception:
+                rec['DatumWeergave'] = None
         
         return transformed_records
 
@@ -411,11 +420,25 @@ class DataTransformer:
                 mapped_type = pay_map.get(ptype_raw, 'Onbekend')
                 abonnement_id = rec.get('membership_id')
 
-                for lbl, val in zip(labels, data_points):
-                    try:
-                        datum = datetime.strptime(lbl, '%Y-%m-%d').date()
-                    except Exception:
-                        # Sla over als de datum niet parsebaar is
+                # Als granularity WEEK en labels afwijkend zijn, dan vallen sommige endpoints terug op weeknummers of lege labels.
+                # Gebruik in dat geval start_date_context en tel per punt +i dagen op (best effort), of sla over als er niets is.
+                start_ctx = rec.get('start_date_context')
+                gran = rec.get('granularity')
+
+                for i, (lbl, val) in enumerate(zip(labels, data_points)):
+                    datum = None
+                    if isinstance(lbl, str) and lbl:
+                        try:
+                            datum = datetime.strptime(lbl, '%Y-%m-%d').date()
+                        except Exception:
+                            datum = None
+                    if datum is None and gran == 'WEEK' and start_ctx:
+                        try:
+                            base = datetime.fromisoformat(start_ctx).date()
+                            datum = base  # representatieve start van de week
+                        except Exception:
+                            datum = None
+                    if datum is None:
                         continue
 
                     key = (datum, category, mapped_type, abonnement_id)
@@ -434,6 +457,15 @@ class DataTransformer:
                 logging.warning(f"Fout bij transformeren van specifieke analytics record: {e}")
 
         transformed_records = list(aggregated.values())
+        # Voeg weergave-datum toe (dd-mm-yyyy)
+        for rec in transformed_records:
+            try:
+                if isinstance(rec.get('Datum'), datetime):
+                    rec['DatumWeergave'] = rec['Datum'].strftime('%d-%m-%Y')
+                else:
+                    rec['DatumWeergave'] = rec['Datum'].strftime('%d-%m-%Y') if rec.get('Datum') else None
+            except Exception:
+                rec['DatumWeergave'] = None
         return transformed_records
     
     def transform_revenue_data(self, raw_data: List[Dict]) -> tuple[List[Dict], List[Dict]]:
@@ -480,6 +512,85 @@ class DataTransformer:
                     logging.warning(f"Fout bij transformeren van grootboekrekening - account={account}, fout: {str(e)}")
         
         return omzet_records, grootboek_records
+    
+    def transform_payouts_data(self, raw_data: List[Dict]) -> List[Dict]:
+        """
+        Transformeer uitbetalingen gegevens naar Uitbetalingen records
+        
+        Args:
+            raw_data: Onbewerkte uitbetalingen gegevens van de payouts API
+            
+        Returns:
+            Lijst van getransformeerde uitbetalingen records
+        """
+        uitbetalingen_records = []
+        
+        for raw_record in raw_data:
+            try:
+                # Extracteer payout data
+                payout = raw_record.get('payout', {})
+                summary = payout.get('summary', {})
+                
+                uitbetalingen_record = {
+                    'UitbetalingID': payout.get('id'),
+                    'Datum': datetime.fromisoformat(payout.get('date', '').replace('Z', '+00:00')),
+                    'Betalingen': summary.get('paymentCount', 0),
+                    'Chargebacks': summary.get('chargebackCount', 0),
+                    'Refunds': summary.get('refundCount', 0),
+                    'NettoBedrag': Decimal(str(summary.get('totalNetAmount', 0))),
+                    'BrutoBedrag': Decimal(str(summary.get('totalGrossAmount', 0))),
+                    'ChargebackBedrag': Decimal(str(summary.get('totalChargebackAmount', 0))),
+                    'RefundBedrag': Decimal(str(summary.get('totalRefundAmount', 0))),
+                    'CommissieBedrag': Decimal(str(summary.get('totalCommissionFeeAmount', 0))),
+                    'Status': payout.get('status', ''),
+                    'DatumLaatsteUpdate': datetime.now()
+                }
+                
+                uitbetalingen_records.append(uitbetalingen_record)
+                
+            except Exception as e:
+                logging.warning(f"Fout bij transformeren van uitbetalingen record - raw_record={raw_record}, fout: {str(e)}")
+                continue
+        
+        logging.info(f"Uitbetalingen transformatie voltooid: {len(uitbetalingen_records)} records getransformeerd")
+        return uitbetalingen_records
+    
+    def transform_product_verkopen_data(self, raw_data: List[Dict]) -> List[Dict]:
+        """
+        Transformeer product verkopen gegevens naar ProductVerkopen records
+        
+        Args:
+            raw_data: Onbewerkte product verkopen gegevens van de daily_revenue API
+            
+        Returns:
+            Lijst van getransformeerde product verkopen records
+        """
+        product_verkopen_records = []
+        
+        for raw_record in raw_data:
+            try:
+                # Extracteer daily revenue data
+                daily_revenue = raw_record.get('dailyRevenue', {})
+                sales_per_product = raw_record.get('SalesPerProduct', [])
+                
+                # Verwerk elke product verkoop
+                for product in sales_per_product:
+                    product_verkopen_record = {
+                        'Datum': datetime.strptime(daily_revenue.get('date', ''), '%Y-%m-%d').date(),
+                        'Product': product.get('name', ''),
+                        'ProductID': product.get('id', ''),
+                        'Aantal': product.get('sales', 0),
+                        'DatumLaatsteUpdate': datetime.now()
+                    }
+                    
+                    product_verkopen_records.append(product_verkopen_record)
+                
+            except Exception as e:
+                logging.warning(f"Fout bij transformeren van product verkoop record - raw_record={raw_record}, fout: {str(e)}")
+                continue
+        
+        logging.info(f"ProductVerkopen transformatie voltooid: {len(product_verkopen_records)} records getransformeerd")
+        return product_verkopen_records
     
     def validate_transformed_data(self, table_name: str, data: List[Dict]) -> List[Dict]:
         """

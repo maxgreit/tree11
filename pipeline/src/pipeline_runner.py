@@ -67,10 +67,11 @@ class PipelineRunner:
             'Omzet': ['GrootboekRekening'],
             'Lessen': [],
             'LesDeelname': ['Lessen'], # LesDeelname depends on Lessen
-            'AbonnementStatistieken': [],
+            'AbonnementStatistieken': [], # Uit standaard pipeline gehaald, maar logica blijft behouden
             'AbonnementStatistiekenSpecifiek': ['Abonnementen'],
             'OpenstaandeFacturen': [],
-            'PersonalTraining': []
+            'PersonalTraining': [],
+            'Uitbetalingen': []
         }
     
     def get_processing_order(self, requested_tables: Optional[List[str]] = None) -> List[str]:
@@ -140,6 +141,10 @@ class PipelineRunner:
             # Speciale behandeling voor AbonnementStatistiekenSpecifiek - per AbonnementId
             if table_name == 'AbonnementStatistiekenSpecifiek':
                 return self._extract_abonnement_statistieken_specifiek(historical, start_date, end_date)
+            
+            # AbonnementStatistieken is uit de standaard pipeline gehaald, maar kan nog steeds handmatig worden opgehaald
+            if table_name == 'AbonnementStatistieken':
+                logging.info("AbonnementStatistieken wordt handmatig opgehaald (uit standaard pipeline gehaald)")
             
             endpoint_name = self._get_endpoint_name_for_table(table_name)
             
@@ -331,6 +336,7 @@ class PipelineRunner:
                     # Gebruik default datumrange voor deze endpoint (config: daily 30 dagen, granularity WEEK)
                     sdt, edt = self.extractor.api_client.get_date_range_for_endpoint(endpoint_name)
 
+                # Haal alle categorieën en payment types op voor dit membership (granularity=DAY staat in config)
                 endpoint_data = self.extractor.api_client.extract_endpoint_data(
                     endpoint_name,
                     start_date=sdt,
@@ -341,6 +347,8 @@ class PipelineRunner:
                 # Voeg membership_id in elke record voor transformatie
                 for record in endpoint_data:
                     record['membership_id'] = membership_id
+                    # Granularity is DAY; WEEK-context niet meer nodig
+                    record['granularity'] = 'DAY'
 
                 all_records.extend(endpoint_data)
 
@@ -364,6 +372,7 @@ class PipelineRunner:
             'AbonnementStatistieken': ['analytics_memberships_new', 'analytics_memberships_paused', 
                                      'analytics_memberships_active', 'analytics_memberships_expired'],
             'AbonnementStatistiekenSpecifiek': 'analytics_memberships_specific',
+            'Uitbetalingen': 'payouts',
         }
         return endpoint_mappings.get(table_name)
     
@@ -398,6 +407,9 @@ class PipelineRunner:
                 else:
                     _, grootboek_records = self.transformer.transform_revenue_data(raw_data)
                     transformed_data = grootboek_records
+            
+            elif table_name == 'Uitbetalingen':
+                transformed_data = self.transformer.transform_payouts_data(raw_data)
             
             elif table_name == 'LesDeelname':
                 # Gebruik de normale transformer voor LesDeelname

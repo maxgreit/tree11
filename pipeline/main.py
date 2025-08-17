@@ -107,14 +107,27 @@ def parse_arguments():
     parser.add_argument(
         '--historical-tables',
         type=str,
-        help='Kommagescheiden lijst van tabellen voor historische data (standaard: Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken,AbonnementStatistiekenSpecifiek)',
-        default='Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistieken,AbonnementStatistiekenSpecifiek'
+        help='Kommagescheiden lijst van tabellen voor historische data (standaard: Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistiekenSpecifiek)',
+        default='Lessen,LesDeelname,Omzet,GrootboekRekening,AbonnementStatistiekenSpecifiek'
     )
     
     parser.add_argument(
         '--weekly',
         action='store_true',
         help='Verwerk historische periode in wekelijkse batches (in plaats van maandelijks)'
+    )
+    
+    parser.add_argument(
+        '--disable-monthly-split',
+        action='store_true',
+        help='Schakel maandelijkse splitsing uit voor historische runs (>31 dagen)'
+    )
+    
+    parser.add_argument(
+        '--no-monthly-split-tables',
+        type=str,
+        default='AbonnementStatistiekenSpecifiek',
+        help='Komma-gescheiden lijst van tabellen die niet per maand gesplitst moeten worden bij historische runs'
     )
     
 
@@ -538,15 +551,21 @@ def main():
                 logging.error(f"Ongeldig datum formaat. Gebruik YYYY-MM-DD: {e}")
                 sys.exit(1)
         
-        # Specifieke tabellen parseren als ze worden opgegeven
+        # Specifieke tabellen parseren; --tables heeft voorrang, ook in historische modus
         specific_tables = None
-        if args.historical:
-            # Gebruik historische tabellen
-            specific_tables = [table.strip() for table in args.historical_tables.split(',')]
-            logging.info(f"Historische tabellen: {specific_tables}")
-        elif args.tables:
+        if args.tables:
             specific_tables = [table.strip() for table in args.tables.split(',')]
             logging.info(f"Specifieke tabellen aangevraagd: {specific_tables}")
+        elif args.historical:
+            # Gebruik default historische tabellen als er geen --tables is opgegeven
+                                # AbonnementStatistieken is uit de standaard pipeline gehaald, maar kan handmatig worden opgehaald
+            specific_tables = [table.strip() for table in args.historical_tables.split(',')]
+            
+            # ProductVerkopen wordt standaard meegenomen in de dagelijkse pipeline
+            if 'ProductVerkopen' not in specific_tables:
+                specific_tables.append('ProductVerkopen')
+                logging.info("ProductVerkopen toegevoegd aan standaard pipeline (afgelopen week data)")
+            logging.info(f"Historische tabellen: {specific_tables}")
         
         # Pipeline runner initialiseren
         logging.info(f"Pipeline runner initialiseren met configuratie: {config_dir}")
@@ -581,6 +600,10 @@ def main():
             if 'Leden' not in specific_tables:
                 logging.warning("ActieveAbonnementen requires Leden data - adding Leden to processing")
                 specific_tables.append('Leden')
+        
+        # Special logging for Uitbetalingen (only in non-historical mode)
+        if not args.historical and specific_tables and 'Uitbetalingen' in specific_tables:
+            logging.info("Uitbetalingen wordt handmatig opgehaald (alle data wordt opgehaald)")
         
         # Uitvoeren van de pipeline met geavanceerde dependency management
         start_time = datetime.now()
@@ -617,16 +640,62 @@ def main():
                     verbose=args.verbose
                 )
             elif total_days > 31:
-                logging.info(f"Periode > 31 dagen ({total_days} dagen) - verwerk alle tabellen per maand: {specific_tables}")
-                result = run_monthly_pipeline(
-                    runner=runner,
-                    start_date=args.start_date,
-                    end_date=args.end_date,
-                    tables=specific_tables,
-                    dry_run=args.dry_run,
-                    skip_health_checks=args.skip_health_checks,
-                    verbose=args.verbose
-                )
+                # Optie: splitsing per maand uitzetten
+                if args.disable_monthly_split:
+                    logging.info(f"Periode > 31 dagen ({total_days} dagen) - maandelijkse splitsing UITGESCHAKELD voor alle tabellen")
+                    result = runner.run_pipeline(**pipeline_params)
+                else:
+                    # Splits tabellen in: maandelijks vs niet-maandelijks (per volledige periode)
+                    excluded = [t.strip() for t in (args.no_monthly_split_tables or '').split(',') if t.strip()]
+                    monthly_tables = [t for t in specific_tables if t not in excluded]
+                    direct_tables = [t for t in specific_tables if t in excluded]
+
+                    monthly_result = None
+                    direct_result = None
+
+                    if monthly_tables:
+                        logging.info(f"Periode > 31 dagen ({total_days} dagen) - verwerk per maand: {monthly_tables}")
+                        monthly_result = run_monthly_pipeline(
+                            runner=runner,
+                            start_date=args.start_date,
+                            end_date=args.end_date,
+                            tables=monthly_tables,
+                            dry_run=args.dry_run,
+                            skip_health_checks=args.skip_health_checks,
+                            verbose=args.verbose
+                        )
+                    
+                    if direct_tables:
+                        logging.info(f"Verwerk zónder maand-splitsing (volledige periode): {direct_tables}")
+                        direct_params = dict(pipeline_params)
+                        direct_params['tables'] = direct_tables
+                        direct_result = runner.run_pipeline(**{
+                            **direct_params,
+                            'historical': True,
+                            'start_date': args.start_date,
+                            'end_date': args.end_date
+                        })
+
+                    # Toon samenvattingen afzonderlijk en bepaal gecombineerde status
+                    if monthly_result and direct_result:
+                        print_execution_summary(monthly_result)
+                        print_execution_summary(direct_result)
+                        # Combineer status voor exit-code
+                        statuses = {monthly_result.get('status'), direct_result.get('status')}
+                        if 'error' in statuses:
+                            result = {'status': 'error'}
+                        elif 'partial_success' in statuses:
+                            result = {'status': 'partial_success'}
+                        else:
+                            result = {'status': 'success'}
+                    elif monthly_result:
+                        result = monthly_result
+                    elif direct_result:
+                        result = direct_result
+                    else:
+                        # Geen tabellen?
+                        logging.warning("Geen tabellen om te verwerken in historische modus")
+                        result = {'status': 'success', 'tables_processed': 0}
             else:
                 logging.info(f"Periode <= 31 dagen ({total_days} dagen) - direct verwerken")
                 result = runner.run_pipeline(**pipeline_params)
