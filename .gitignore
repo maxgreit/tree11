@@ -1,3 +1,4 @@
 .env
 /pipeline/.env
 .DS_Store
+*.pyc
