@@ -577,6 +577,9 @@ class DatabaseManager:
             ],
             'PersonalTraining': [
                 'Id', 'Voornaam', 'Achternaam', 'Datum', 'Uren', 'DatumLaatsteUpdate'
+            ],
+            'ProductVerkopen': [
+                'ProductVerkopenID', 'Datum', 'Product', 'ProductID', 'Aantal', 'DatumLaatsteUpdate'
             ]
         }
         

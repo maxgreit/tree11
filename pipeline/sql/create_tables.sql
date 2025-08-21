@@ -284,7 +284,7 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductVerkopen' AND schema_id = SCHEMA_ID('tree11'))
 BEGIN
     CREATE TABLE tree11.ProductVerkopen (
-        ProductVerkopenID INT IDENTITY(1,1) NOT NULL,
+        ProductVerkopenID NVARCHAR(50) NOT NULL,
         Datum DATE NOT NULL,
         Product NVARCHAR(255) NOT NULL,
         ProductID NVARCHAR(50) NOT NULL,

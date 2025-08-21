@@ -346,7 +346,7 @@ class GymlyAPIClient:
             
         elif pagination_type == 'page_based':
             # Page-based pagination
-            page = 1
+            page = 0  # API gebruikt 0-based indexing
             page_size = pagination_config.get('default_size', 100)
             
             while True:
@@ -358,7 +358,7 @@ class GymlyAPIClient:
                 url = self._build_url(endpoint_name, **params)
                 
                 # Log the full URL and parameters for debugging (first page only)
-                if page == 1:
+                if page == 0:
                     payment_type = params.get('payment_type', 'UNKNOWN')
                 
                 response = self._make_request(url, page_params)
@@ -377,7 +377,7 @@ class GymlyAPIClient:
                     current_page = pagination_info.get('currentPage', page)
                     total_pages = pagination_info.get('totalPages', 1)
                     
-                    if current_page >= total_pages - 1:
+                    if current_page >= total_pages:
                         break
                 
                 page += 1
@@ -517,12 +517,15 @@ class DataExtractor:
             logging.info("Gebruik standaard datum bereik voor dagelijkse data extractie")
             return self.api_client.extract_endpoint_data(endpoint_name)
     
-    def extract_all_data(self, specific_tables: Optional[List[str]] = None) -> Dict[str, List[Dict]]:
+    def extract_all_data(self, specific_tables: Optional[List[str]] = None, historical: bool = False, start_date: str = None, end_date: str = None) -> Dict[str, List[Dict]]:
         """
         Extract data for all tables or specific tables
         
         Args:
             specific_tables: Optional list of specific tables to extract
+            historical: If True, use provided start_date and end_date for date ranges
+            start_date: Start date for historical data (YYYY-MM-DD format)
+            end_date: End date for historical data (YYYY-MM-DD format)
             
         Returns:
             Dictionary mapping table names to extracted data
@@ -546,7 +549,8 @@ class DataExtractor:
                 'analytics_memberships_expired'
             ],
             'OpenstaandeFacturen': 'invoices_pending',
-            'PersonalTraining': 'google_sheets'
+            'PersonalTraining': 'google_sheets',
+            'ProductVerkopen': 'pos_statistics'
         }
         
         # Filter to specific tables if requested
@@ -563,6 +567,9 @@ class DataExtractor:
                 elif table_name == 'LesDeelname':
                     # Special handling for LesDeelname - requires course IDs from past lessons
                     data = self._extract_les_deelname_data()
+                elif table_name == 'ProductVerkopen':
+                    # Special handling for ProductVerkopen - uses pos_statistics endpoint per day
+                    data = self._extract_product_verkopen_data(historical, start_date, end_date)
                 elif isinstance(endpoint_name, list):
                     # Multiple endpoints (like AbonnementStatistieken)
                     data = []
@@ -679,3 +686,115 @@ class DataExtractor:
         except Exception as e:
             logging.error(f"Fout bij LesDeelname extractie: {e}")
             raise
+    
+    def _extract_product_verkopen_data(self, historical: bool = False, start_date: str = None, end_date: str = None) -> List[Dict]:
+        """
+        Speciale extractie voor ProductVerkopen - haalt POS statistieken data op per dag
+        
+        Args:
+            historical: Als True, gebruikt de opgegeven date range; anders laatste 7 dagen
+            start_date: Startdatum in YYYY-MM-DD formaat (alleen bij historical=True)
+            end_date: Einddatum in YYYY-MM-DD formaat (alleen bij historical=True)
+            
+        Returns:
+            Lijst met alle product verkopen records
+        """
+        logging.info("Speciale extractie voor ProductVerkopen - haalt POS statistieken data op per dag")
+        
+        try:
+            from datetime import datetime, timedelta, date
+            
+            # Bepaal de date range
+            if historical and start_date and end_date:
+                # Parse de string dates naar date objecten
+                if isinstance(start_date, str):
+                    start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+                else:
+                    start_date_obj = start_date
+                    
+                if isinstance(end_date, str):
+                    end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+                else:
+                    end_date_obj = end_date
+                    
+                logging.info(f"ProductVerkopen extractie voor historische periode: {start_date_obj} tot {end_date_obj}")
+            else:
+                # Gebruik standaard periode van afgelopen 7 dagen
+                today = datetime.now().date()
+                start_date_obj = today - timedelta(days=7)
+                end_date_obj = today
+                logging.info(f"ProductVerkopen extractie voor afgelopen 7 dagen: {start_date_obj} tot {end_date_obj}")
+            
+            # Verzamel alle data per dag
+            all_products_data = []
+            current_date = start_date_obj
+            
+            # Gebruik de pos_statistics endpoint
+            endpoint_name = 'pos_statistics'
+            
+            # Loop door elke dag in de range
+            while current_date <= end_date_obj:
+                logging.info(f"ProductVerkopen data ophalen voor datum: {current_date}")
+                
+                # Voor de API: startDate = gewenste dag, endDate = dag erna
+                api_end_date = current_date + timedelta(days=1)
+                logging.debug(f"API call: start_date={current_date.isoformat()}, end_date={api_end_date.isoformat()}")
+                
+                # Bouw URL op voor deze specifieke dag
+                url = self.api_client._build_url(
+                    endpoint_name, 
+                    start_date=current_date.isoformat(), 
+                    end_date=api_end_date.isoformat(), 
+                    location_id=self.api_client.base_config['location_id']
+                )
+                
+                # Haal data op voor deze dag
+                response = self.api_client._make_request(url)
+                
+                # Debug logging om te zien wat er wordt opgehaald
+                logging.debug(f"API response keys voor {current_date}: {list(response.json().keys()) if response else 'Geen response'}")
+                
+                if response and 'salesPerProduct' in response.json():
+                    response_data = response.json()
+                    logging.debug(f"salesPerProduct array lengte voor {current_date}: {len(response_data['salesPerProduct'])}")
+                    if response_data['salesPerProduct']:
+                        logging.debug(f"Eerste product in array voor {current_date}: {response_data['salesPerProduct'][0]}")
+                    
+                    # Transformeer de data naar het juiste formaat voor de schema mappings
+                    day_products_data = []
+                    for i, product in enumerate(response_data['salesPerProduct']):
+                        if product['sales'] > 0:  # Alleen producten met verkopen
+                            # Maak een record dat overeenkomt met de schema mapping structuur
+                            # De schema mappings verwachten: Product, ProductID, Aantal, Datum
+                            # ProductVerkopenID wordt handmatig gegenereerd als unieke identifier
+                            product_record = {
+                                'ProductVerkopenID': f"PV_{current_date.strftime('%Y%m%d')}_{i:03d}",
+                                'Product': product['name'],
+                                'ProductID': product['id'],
+                                'Aantal': product['sales'],
+                                'Datum': current_date.isoformat()
+                            }
+                            day_products_data.append(product_record)
+                            
+                            # Debug logging om te zien wat er wordt gemaakt
+                            logging.debug(f"Product record gemaakt voor {current_date}: {product_record}")
+                    
+                    # Voeg de data van deze dag toe aan de totale lijst
+                    all_products_data.extend(day_products_data)
+                    logging.info(f"ProductVerkopen data voor {current_date}: {len(day_products_data)} producten gevonden")
+                    
+                else:
+                    logging.warning(f"Geen salesPerProduct data gevonden voor {current_date}")
+                
+                # Ga naar de volgende dag
+                current_date += timedelta(days=1)
+            
+            logging.info(f"ProductVerkopen extractie voltooid: {len(all_products_data)} producten gevonden voor periode {start_date_obj} tot {end_date_obj}")
+            if all_products_data:
+                logging.debug(f"Eerste product record structuur: {all_products_data[0]}")
+                logging.debug(f"Totaal aantal product records: {len(all_products_data)}")
+            return all_products_data
+            
+        except Exception as e:
+            logging.error(f"Fout bij ProductVerkopen extractie: {str(e)}")
+            return []

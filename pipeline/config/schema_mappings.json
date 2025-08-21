@@ -423,10 +423,10 @@
           "transformation": "iso_datetime",
           "required": true
         },
-        "instructors": {
+        "teachers[0].fullName": {
           "target_column": "Instructeurs",
-          "sql_type": "NVARCHAR(MAX)",
-          "transformation": "json_dump",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
           "required": false
         }
       }
@@ -649,33 +649,33 @@
       }
     },
     "ProductVerkopen": {
-      "source_endpoint": "daily_revenue",
+      "source_endpoint": "pos_statistics",
       "update_strategy": "upsert",
       "primary_key": ["Datum", "ProductID"],
       "frequency": "daily",
       "columns": {
-        "dailyRevenue.date": {
-          "target_column": "Datum",
-          "sql_type": "DATE",
-          "transformation": "parse_date",
-          "required": true
-        },
-        "SalesPerProduct.name": {
+        "Product": {
           "target_column": "Product",
           "sql_type": "NVARCHAR(255)",
           "transformation": "direct",
           "required": true
         },
-        "SalesPerProduct.id": {
+        "ProductID": {
           "target_column": "ProductID",
           "sql_type": "NVARCHAR(50)",
           "transformation": "direct",
           "required": true
         },
-        "SalesPerProduct.sales": {
+        "Aantal": {
           "target_column": "Aantal",
           "sql_type": "INT",
           "transformation": "integer",
+          "required": true
+        },
+        "Datum": {
+          "target_column": "Datum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
           "required": true
         }
       }

@@ -282,6 +282,25 @@
       "table_mapping": "ProductVerkopen",
       "date_format": "YYYY-MM-DD",
       "days_back": 1
+    },
+    "pos_statistics": {
+      "url_template": "{base_url}/v1/businesses/{business_id}/pos/statistics",
+      "method": "GET",
+      "pagination": {
+        "type": "none"
+      },
+      "response_type": "object",
+      "data_path": "",
+      "parameters": {
+        "startDate": "{start_date}",
+        "endDate": "{end_date}",
+        "location_id": "{location_id}"
+      },
+      "date_range": {
+        "type": "daily",
+        "days_back": 7
+      },
+      "table_mapping": "ProductVerkopen"
     }
   },
   "google_sheets": {

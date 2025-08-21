@@ -148,7 +148,7 @@ class DataTransformer:
             return record[field_path]
         
         # Handel geneste kolommen met puntnotatie
-        if '.' in field_path:
+        if '.' in field_path and '[' not in field_path:
             parts = field_path.split('.')
             current = record
             for part in parts:
@@ -160,9 +160,42 @@ class DataTransformer:
         
         # Handel array indexering (voor analytics gegevens)
         if '[' in field_path and ']' in field_path:
-            # This is complex - for now return None
-            # TODO: Implement array indexing for analytics data
-            return None
+            # Implement array indexing voor instructeurs[0].fullName etc.
+            try:
+                # Split op [ en ] om array index te vinden
+                base_path = field_path.split('[')[0]
+                index_part = field_path.split('[')[1].split(']')[0]
+                remaining_path = field_path.split(']', 1)[1] if len(field_path.split(']', 1)) > 1 else ''
+                
+                # Haal base array op
+                if base_path not in record:
+                    return None
+                
+                array_value = record[base_path]
+                
+                if not isinstance(array_value, list) or len(array_value) == 0:
+                    return None
+                
+                # Haal element op bij index
+                try:
+                    index = int(index_part)
+                    if index >= len(array_value):
+                        return None
+                    
+                    element = array_value[index]
+                    
+                    # Als er nog een pad is, navigeer verder
+                    if remaining_path and remaining_path.startswith('.'):
+                        remaining_path = remaining_path[1:]  # Verwijder leading dot
+                        if isinstance(element, dict) and remaining_path in element:
+                            return element[remaining_path]
+                        return None
+                    
+                    return element
+                except (ValueError, IndexError):
+                    return None
+            except Exception:
+                return None
         
         return None
     
@@ -248,6 +281,16 @@ class DataTransformer:
             
             elif transformation == 'google_sheet_lookup':
                 # TODO: Implement Google Sheet lookup for sectie
+                return ''
+            
+            elif transformation == 'instructor_name':
+                # Extraheer instructeur naam uit instructeurs array
+                if not value or not isinstance(value, list) or len(value) == 0:
+                    return ''
+                # Neem de eerste instructeur en haal de fullName op
+                first_instructor = value[0]
+                if isinstance(first_instructor, dict) and 'fullName' in first_instructor:
+                    return first_instructor['fullName']
                 return ''
             
             else:

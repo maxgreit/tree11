@@ -7,7 +7,8 @@ load_dotenv()
 
 token = os.getenv('token')
 
-url = "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/pos/statistics?startDate=2025-08-01&endDate=2025-08-31&locations=759cf904-4133-4fd8-af4c-ded2cedb6192"
+
+url = "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/pos/statistics?startDate=2025-08-14&endDate=2025-08-22"
 
 params = {'page': 1, 'size': 10}
 
