@@ -34,54 +34,63 @@ dag = DAG(
 leden_taak = BashOperator(
         task_id='leden_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Leden"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 lessen_taak = BashOperator(
         task_id='lessen_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Lessen"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 lesdeelname_taak = BashOperator(
         task_id='lesdeelname_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Lesdeelname"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 grootboekrekening_taak = BashOperator(
         task_id='grootboekrekening_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Grootboekrekening"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 omzet_taak = BashOperator(
         task_id='omzet_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Omzet"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 product_verkoop_taak = BashOperator(
         task_id='product_verkoop_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables ProductVerkopen"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 uitbetalingen_taak = BashOperator(
         task_id='uitbetalingen_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Uitbetalingen"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 openstaande_facturen_taak = BashOperator(
         task_id='openstaande_facturen_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables OpenstaandeFacturen"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 
 abonnement_statistieken_taak = BashOperator(
         task_id='abonnement_statistieken_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables AbonnementStatistiekenSpecifiek"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 

@@ -34,6 +34,7 @@ dag = DAG(
 abonnementen_taak = BashOperator(
         task_id='abonnementen_taak',
         bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Abonnementen"),
+        cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
 

@@ -3,10 +3,10 @@
     "base_url": "https://api.gymly.io/api",
     "business_id": "df5acf01-8dfd-476b-9ba3-1d939f73fe1e",
     "location_id": "759cf904-4133-4fd8-af4c-ded2cedb6192",
-    "timeout": 30,
-    "max_retries": 3,
-    "retry_backoff_factor": 2,
-    "rate_limit_requests_per_minute": 60
+    "timeout": 60,
+    "max_retries": 5,
+    "retry_backoff_factor": 3,
+    "rate_limit_requests_per_minute": 30
   },
   "auth": {
     "type": "bearer",

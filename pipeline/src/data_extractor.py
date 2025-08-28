@@ -64,6 +64,11 @@ class GymlyAPIClient:
         if elapsed < self.request_interval:
             sleep_time = self.request_interval - elapsed
             time.sleep(sleep_time)
+        
+        # Extra delay om API minder te belasten
+        extra_delay = 2.0  # 2 seconden extra delay
+        time.sleep(extra_delay)
+        
         self.last_request_time = time.time()
     
     def _build_url(self, endpoint_name: str, **kwargs) -> str:
@@ -122,8 +127,8 @@ class GymlyAPIClient:
         return url
     
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=5, max=30),
         retry=retry_if_exception_type((requests.RequestException, RateLimitError))
     )
     def _make_request(self, url: str, params: Optional[Dict] = None) -> requests.Response:
@@ -154,7 +159,7 @@ class GymlyAPIClient:
             
             # Handle rate limiting
             if response.status_code == 429:
-                retry_after = int(response.headers.get('Retry-After', 60))
+                retry_after = int(response.headers.get('Retry-After', 120))
                 logging.warning(f"Rate limited, waiting - retry_after={retry_after}")
                 time.sleep(retry_after)
                 raise RateLimitError("Rate limit exceeded")
