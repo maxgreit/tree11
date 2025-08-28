@@ -18,7 +18,7 @@
   },
   "endpoints": {
     "users": {
-      "url_template": "{base_url}/v2/businesses/{business_id}/users",
+      "url_template": "{base_url}/v1/businesses/{business_id}/users",
       "method": "GET",
       "pagination": {
         "type": "page_based",
@@ -92,7 +92,7 @@
         "status": "PENDING"
       },
       "table_mapping": "OpenstaandeFacturen",
-      "note": "Currently returns 400 error - needs investigation"
+      "note": "Re-enabled with Naam column support"
     },
     "analytics_revenue": {
       "url_template": "{base_url}/v1/businesses/{business_id}/analytics/revenue",

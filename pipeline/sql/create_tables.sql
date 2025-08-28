@@ -197,6 +197,7 @@ BEGIN
         FactuurId NVARCHAR(50) NOT NULL,
         Nummer INT NULL,
         LedenId NVARCHAR(50) NULL,
+        Naam NVARCHAR(255) NULL,
         Bedrag DECIMAL(10,2) NOT NULL,
         Valuta NVARCHAR(3) NULL DEFAULT 'EUR',
         Status NVARCHAR(50) NULL,

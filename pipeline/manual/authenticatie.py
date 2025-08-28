@@ -1,5 +1,10 @@
+from dotenv import load_dotenv
 import requests
 import json
+import os
+
+
+load_dotenv()
 
 url = "https://api.gymly.io/api/v1/user/auth/login"
 
@@ -9,8 +14,8 @@ headers = {
     'content-type': 'application/json'}
 
 data = {
-    "email": "max@greit.nl",
-    "password": "RVX6dxh@hkr_thx1mcg"
+    "email": os.getenv('EMAIL'),
+    "password": os.getenv('PASSWORD')
 }
 
 response = requests.post(url, headers=headers, json=data)

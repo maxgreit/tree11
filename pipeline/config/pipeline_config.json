@@ -46,8 +46,8 @@
       "strategy": "replace",
       "frequency": "daily",
       "batch_size": 500,
-      "enabled": false,
-      "note": "Disabled due to API error 400"
+      "enabled": true,
+      "note": "Re-enabled with Naam column support"
     },
     "Omzet": {
       "strategy": "upsert",

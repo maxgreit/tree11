@@ -5,12 +5,12 @@ import os
 
 load_dotenv()
 
-token = os.getenv('token')
+token = os.getenv('GYMLY_API_TOKEN')
 
 
 url = "https://api.gymly.io/api/v1/businesses/df5acf01-8dfd-476b-9ba3-1d939f73fe1e/users"
 
-params = {'page': 1, 'size': 10}
+params = {'page': 1, 'size': 100}
 
 
 headers = {

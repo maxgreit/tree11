@@ -449,6 +449,12 @@
           "transformation": "direct",
           "required": false
         },
+        "businessUser.fullName": {
+          "target_column": "Naam",
+          "sql_type": "NVARCHAR(255)",
+          "transformation": "direct",
+          "required": false
+        },
         "number": {
           "target_column": "Nummer",
           "sql_type": "INT",

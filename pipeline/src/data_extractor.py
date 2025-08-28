@@ -41,11 +41,18 @@ class GymlyAPIClient:
         self.auth_config = config['auth']
         self.endpoints = config['endpoints']
         
+        # Get API credentials from environment
+        self.email = os.getenv('EMAIL')
+        self.password = os.getenv('PASSWORD')
+        if not self.email or not self.password:
+            raise ValueError("EMAIL and PASSWORD must be set in environment")
+        
         # Get API token from environment
         token_env_var = self.auth_config['token_env_var']
         self.api_token = os.getenv(token_env_var)
         if not self.api_token:
-            raise ValueError(f"API token not found in environment variable: {token_env_var}")
+            logging.warning(f"API token not found, attempting to authenticate...")
+            self.api_token = self._authenticate()
         
         # Setup session with default headers
         self.session = requests.Session()
@@ -57,6 +64,115 @@ class GymlyAPIClient:
         self.request_interval = 60 / self.base_config['rate_limit_requests_per_minute']
         
         logging.info(f"Gymly API Client geïnitialiseerd")
+    
+    def _authenticate(self) -> str:
+        """
+        Authenticate with Gymly API and return access token
+        
+        Returns:
+            Access token string
+            
+        Raises:
+            APIError: If authentication fails
+        """
+        try:
+            auth_url = "https://api.gymly.io/api/v1/user/auth/login"
+            auth_data = {
+                "email": self.email,
+                "password": self.password
+            }
+            
+            logging.info(f"Authenticating with Gymly API...")
+            response = requests.post(auth_url, json=auth_data, timeout=30)
+            
+            if response.status_code == 200:
+                auth_response = response.json()
+                token = auth_response.get('accessToken') or auth_response.get('token')
+                
+                if token:
+                    # Update environment variable
+                    os.environ['GYMLY_API_TOKEN'] = token
+                    
+                    # Update .env file
+                    self._update_env_file(token)
+                    
+                    logging.info("Authentication successful, token updated in environment and .env file")
+                    return token
+                else:
+                    raise APIError("No access token in authentication response")
+            else:
+                error_msg = f"Authentication failed - status_code={response.status_code}, error={response.text}"
+                logging.error(error_msg)
+                raise APIError(error_msg)
+                
+        except Exception as e:
+            error_msg = f"Authentication error: {str(e)}"
+            logging.error(error_msg)
+            raise APIError(error_msg)
+    
+    def _update_env_file(self, new_token: str):
+        """
+        Update the .env file with the new token
+        
+        Args:
+            new_token: New API token to save
+        """
+        try:
+            env_file_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+            
+            # Check if .env file exists
+            if not os.path.exists(env_file_path):
+                logging.warning(".env file not found, cannot update token")
+                return
+            
+            # Read current .env file
+            with open(env_file_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            # Update or add GYMLY_API_TOKEN line
+            token_updated = False
+            for i, line in enumerate(lines):
+                if line.startswith('GYMLY_API_TOKEN='):
+                    lines[i] = f'GYMLY_API_TOKEN={new_token}\n'
+                    token_updated = True
+                    break
+            
+            # If token line doesn't exist, add it
+            if not token_updated:
+                lines.append(f'GYMLY_API_TOKEN={new_token}\n')
+            
+            # Write updated .env file
+            with open(env_file_path, 'w', encoding='utf-8') as f:
+                f.writelines(lines)
+            
+            logging.info(f"Token updated in .env file: {env_file_path}")
+            
+        except Exception as e:
+            logging.error(f"Failed to update .env file: {e}")
+            # Don't raise error, just log it - token is still updated in environment
+    
+    def _refresh_token_if_needed(self, response: requests.Response) -> bool:
+        """
+        Check if token needs refresh and refresh if necessary
+        
+        Args:
+            response: HTTP response object
+            
+        Returns:
+            True if token was refreshed, False otherwise
+        """
+        if response.status_code == 401:
+            logging.warning("Token expired, attempting to refresh...")
+            try:
+                new_token = self._authenticate()
+                self.api_token = new_token
+                self.session.headers['Authorization'] = f"Bearer {new_token}"
+                logging.info("Token refreshed successfully")
+                return True
+            except Exception as e:
+                logging.error(f"Failed to refresh token: {e}")
+                return False
+        return False
     
     def _wait_for_rate_limit(self):
         """Enforce rate limiting between requests"""
@@ -129,7 +245,8 @@ class GymlyAPIClient:
     @retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=2, min=5, max=30),
-        retry=retry_if_exception_type((requests.RequestException, RateLimitError))
+        retry=retry_if_exception_type((requests.RequestException, RateLimitError)),
+        retry_error_callback=lambda retry_state: logging.error(f"Final retry failed after {retry_state.attempt_number} attempts")
     )
     def _make_request(self, url: str, params: Optional[Dict] = None) -> requests.Response:
         """
@@ -164,8 +281,28 @@ class GymlyAPIClient:
                 time.sleep(retry_after)
                 raise RateLimitError("Rate limit exceeded")
             
-            # Handle client errors
-            if response.status_code in [400, 401, 403, 404]:
+            # Handle authentication errors - try token refresh
+            if response.status_code == 401:
+                if self._refresh_token_if_needed(response):
+                    # Retry the request with new token
+                    logging.info("Retrying request with refreshed token...")
+                    response = self.session.get(
+                        url, 
+                        params=params,
+                        timeout=self.base_config['timeout']
+                    )
+                    # Check if retry was successful
+                    if response.status_code == 401:
+                        error_msg = f"Authentication failed even after token refresh - status_code={response.status_code}, error={response.text}"
+                        logging.error(error_msg)
+                        raise APIError(error_msg)
+                else:
+                    error_msg = f"Authentication failed - status_code={response.status_code}, error={response.text}"
+                    logging.error(error_msg)
+                    raise APIError(error_msg)
+            
+            # Handle other client errors
+            if response.status_code in [400, 403, 404]:
                 error_msg = f"API Error {response.status_code}: {response.text}"
                 logging.error(f"API client error - status_code={response.status_code}, error={response.text}, url={url}")
                 raise APIError(error_msg)
