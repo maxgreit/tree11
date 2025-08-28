@@ -26,14 +26,62 @@ dag = DAG(
     'tree11_daily_dag_v01',
     default_args=default_args,
     description='Data update',
-    schedule_interval="0 7 * * *",
+    schedule_interval="0 6-22/3 * * *",
     catchup=False,
 )
 
 # Definieer de taken van de DAG
-dagelijkse_taak = BashOperator(
-        task_id='dagelijkse_taak',
-        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py"),
+leden_taak = BashOperator(
+        task_id='leden_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Leden"),
+        dag=dag,
+)
+
+lessen_taak = BashOperator(
+        task_id='lessen_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Lessen"),
+        dag=dag,
+)
+
+lesdeelname_taak = BashOperator(
+        task_id='lesdeelname_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Lesdeelname"),
+        dag=dag,
+)
+
+grootboekrekening_taak = BashOperator(
+        task_id='grootboekrekening_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Grootboekrekening"),
+        dag=dag,
+)
+
+omzet_taak = BashOperator(
+        task_id='omzet_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Omzet"),
+        dag=dag,
+)
+
+product_verkoop_taak = BashOperator(
+        task_id='product_verkoop_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables ProductVerkopen"),
+        dag=dag,
+)
+
+uitbetalingen_taak = BashOperator(
+        task_id='uitbetalingen_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Uitbetalingen"),
+        dag=dag,
+)
+
+openstaande_facturen_taak = BashOperator(
+        task_id='openstaande_facturen_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables OpenstaandeFacturen"),
+        dag=dag,
+)
+
+abonnement_statistieken_taak = BashOperator(
+        task_id='abonnement_statistieken_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables AbonnementStatistiekenSpecifiek"),
         dag=dag,
 )
 
@@ -49,6 +97,6 @@ end_parallel_tasks = EmptyOperator(
 
 # Taak structuur
 start_parallel_tasks >> [
-    dagelijkse_taak,
+    leden_taak, lessen_taak, lesdeelname_taak, grootboekrekening_taak, omzet_taak, product_verkoop_taak, uitbetalingen_taak, openstaande_facturen_taak, abonnement_statistieken_taak
 ] >> end_parallel_tasks
                           
