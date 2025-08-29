@@ -233,12 +233,13 @@ class PipelineRunner:
             if historical:
                 lessen_data = self.extract_table_data('Lessen', historical=True, start_date=start_date, end_date=end_date)
             else:
-                # Voor dagelijkse extractie: afgelopen week (inclusief vandaag)
+                # Voor dagelijkse extractie: afgelopen week (inclusief morgen)
                 from datetime import datetime, timedelta
                 today = datetime.now().date()
+                tomorrow = today + timedelta(days=1)
                 week_ago = today - timedelta(days=7)
                 start_date = week_ago.strftime('%Y-%m-%d')
-                end_date = today.strftime('%Y-%m-%d')
+                end_date = tomorrow.strftime('%Y-%m-%d')
                 
                 logging.info(f"LesDeelname dagelijkse extractie: {start_date} tot {end_date}")
                 lessen_data = self.extract_table_data('Lessen', historical=True, start_date=start_date, end_date=end_date)
