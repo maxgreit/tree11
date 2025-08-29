@@ -248,7 +248,7 @@ class PipelineRunner:
                 logging.warning("Geen lessen gevonden voor LesDeelname extractie")
                 return []
             
-            # Filter lessen die in het verleden liggen (niet vandaag of in de toekomst)
+            # Filter lessen die vóór morgen zijn (inclusief vandaag)
             from datetime import datetime
             today = datetime.now().date()
             past_lessons = []
@@ -264,8 +264,8 @@ class PipelineRunner:
                         else:
                             start_tijd = start_tijd_str
                         
-                        # Check of les in het verleden ligt
-                        if start_tijd.date() < today:
+                        # Check of les vóór morgen is (inclusief vandaag)
+                        if start_tijd.date() <= today:
                             past_lessons.append(les)
                 except Exception as e:
                     logging.warning(f"Fout bij parsen van les datum: {e}")
