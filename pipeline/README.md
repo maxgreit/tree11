@@ -209,7 +209,6 @@ Log bestanden worden opgeslagen in `logs/`:
 - `tree11_errors.log` - Alleen errors
 
 ### Database Monitoring
-- `tree11.PipelineLog` - Execution history en performance
 - `tree11.DataQualityLog` - Data quality checks
 
 ### Notifications
@@ -293,11 +292,6 @@ grep "duration_seconds" logs/tree11_pipeline.log | tail -5
 
 ### Database Queries
 ```sql
--- Check recent pipeline runs
-SELECT TOP 10 * FROM tree11.PipelineLog 
-WHERE TabelNaam = 'PIPELINE_START' 
-ORDER BY StartTijd DESC;
-
 -- Data quality issues
 SELECT * FROM tree11.DataQualityLog 
 WHERE CheckStatus != 'PASS' 
