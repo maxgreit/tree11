@@ -70,9 +70,10 @@
     },
     "AbonnementStatistiekenSpecifiek": {
       "source_endpoint": "analytics_memberships_specific",
-      "update_strategy": "upsert",
+      "update_strategy": "date_truncate",
       "primary_key": ["Datum", "Categorie", "Type", "AbonnementId"],
       "frequency": "daily",
+      "date_truncate_days": 7,
       "columns": {
         "endpoint_type": {
           "target_column": "Categorie",

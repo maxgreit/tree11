@@ -80,6 +80,13 @@
       "batch_size": 1000,
       "duplicate_handling": "update",
       "note": "Dagelijkse product verkopen met upsert strategie"
+    },
+    "AbonnementStatistiekenSpecifiek": {
+      "strategy": "date_truncate",
+      "frequency": "daily",
+      "batch_size": 2000,
+      "date_truncate_days": 7,
+      "note": "Geoptimaliseerd: verwijdert alleen data van laatste 7 dagen en vult opnieuw"
     }
   },
   "feature_flags": {

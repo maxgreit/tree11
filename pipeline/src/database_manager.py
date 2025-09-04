@@ -315,6 +315,10 @@ class DatabaseManager:
                     # For insert strategy: simple append (may cause primary key violations)
                     self._bulk_insert_data(conn, table_name, df)
                         
+                elif update_strategy == 'date_truncate':
+                    # For date_truncate strategy: delete data from last N days and insert new data
+                    self._perform_date_truncate(conn, table_name, df)
+                        
                 else:
                     raise ValueError(f"Unsupported update strategy: {update_strategy}")
             
@@ -940,6 +944,72 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Composite UPSERT operation failed - table={table_name}, error={str(e)}")
             raise
+    
+    def _perform_date_truncate(self, conn, table_name: str, df: pd.DataFrame):
+        """
+        Perform date-based truncate operation: delete data from last N days and insert new data
+        
+        Args:
+            conn: Database connection
+            table_name: Name of target table
+            df: DataFrame with data to insert
+        """
+        try:
+            # Get the date truncate configuration from schema mappings
+            schema_config = self._get_schema_config(table_name)
+            date_truncate_days = schema_config.get('date_truncate_days', 7)
+            
+            # Calculate the cutoff date (N days ago)
+            from datetime import datetime, timedelta
+            cutoff_date = datetime.now().date() - timedelta(days=date_truncate_days)
+            
+            logger.info(f"Date truncate operation - table={table_name}, cutoff_date={cutoff_date}, days_back={date_truncate_days}")
+            
+            with conn.begin():
+                # Delete existing data from the last N days
+                delete_query = f"""
+                DELETE FROM [{self.config['database']['schema']}].[{table_name}]
+                WHERE Datum >= :cutoff_date
+                """
+                
+                result = conn.execute(text(delete_query), {'cutoff_date': cutoff_date})
+                deleted_count = result.rowcount if result.rowcount else 0
+                
+                logger.info(f"Deleted {deleted_count} records from last {date_truncate_days} days - table={table_name}")
+                
+                # Insert new data
+                self._bulk_insert_data(conn, table_name, df)
+                
+                logger.info(f"Date truncate completed - table={table_name}, deleted={deleted_count}, inserted={len(df)}")
+                
+        except Exception as e:
+            logger.error(f"Date truncate operation failed - table={table_name}, error={str(e)}")
+            raise
+    
+    def _get_schema_config(self, table_name: str) -> dict:
+        """
+        Get schema configuration for a table
+        
+        Args:
+            table_name: Name of the table
+            
+        Returns:
+            Dictionary with schema configuration
+        """
+        try:
+            # Load schema mappings
+            import json
+            import os
+            
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'schema_mappings.json')
+            with open(config_path, 'r', encoding='utf-8') as f:
+                schema_mappings = json.load(f)
+            
+            return schema_mappings.get(table_name, {})
+            
+        except Exception as e:
+            logger.warning(f"Could not load schema config for {table_name}: {str(e)}")
+            return {}
     
     def log_pipeline_error(self, execution_id: str, error_msg: str) -> None:
         """
