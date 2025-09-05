@@ -74,6 +74,7 @@
       "primary_key": ["Datum", "Categorie", "Type", "AbonnementId"],
       "frequency": "daily",
       "date_truncate_days": 7,
+      "date_truncate_column": "Datum",
       "columns": {
         "endpoint_type": {
           "target_column": "Categorie",
@@ -228,7 +229,7 @@
     },
     "LesDeelname": {
       "source_endpoint": "api.gymly.io_courses_members",
-      "update_strategy": "upsert",
+      "update_strategy": "lesid_truncate",
       "primary_key": ["LesId", "AccountId"],
       "frequency": "daily",
       "columns": {

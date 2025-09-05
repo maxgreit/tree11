@@ -76,7 +76,9 @@
       "data_path": "",
       "parameters": {},
       "table_mapping": "LesDeelname",
-      "requires_course_ids": true
+      "requires_course_ids": true,
+      "rate_limit_requests_per_minute": 120,
+      "note": "Parallel processing enabled - hoge rate limit voor veel course calls"
     },
     "invoices": {
       "url_template": "{base_url}/v1/businesses/{business_id}/invoices",

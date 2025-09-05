@@ -273,34 +273,133 @@ class PipelineRunner:
             
             logging.info(f"Gevonden {len(past_lessons)} lessen in het verleden voor LesDeelname extractie")
             
-            # Voor elke les in het verleden, haal de members op
+            # Parallel processing voor course members - veel sneller dan sequentieel
             all_les_deelname = []
             
-            for les in past_lessons:
-                course_id = les.get('Id') or les.get('id')
-                if not course_id:
-                    logging.warning(f"Geen course ID gevonden voor les: {les}")
-                    continue
+            if len(past_lessons) > 1:
+                logging.info(f"Parallel processing voor {len(past_lessons)} lessen - veel sneller dan sequentieel")
                 
-                try:
-                    logging.info(f"Haalt members op voor course: {course_id}")
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                import threading
+                
+                def process_course_members(les):
+                    """Process single course members - thread-safe with retry logic"""
+                    course_id = les.get('Id') or les.get('id')
+                    if not course_id:
+                        logging.warning(f"Geen course ID gevonden voor les: {les}")
+                        return []
                     
-                    # Haal members op voor deze course
-                    members_data = self.extractor.api_client.extract_endpoint_data(
-                        'courses_members', 
-                        course_id=course_id
-                    )
+                    max_retries = 3
+                    base_delay = 1  # seconds
                     
-                    # Voeg course_id toe aan elke member record
-                    for member in members_data:
-                        member['course_id'] = course_id
+                    for attempt in range(max_retries):
+                        try:
+                            # Haal members op voor deze course
+                            members_data = self.extractor.api_client.extract_endpoint_data(
+                                'courses_members', 
+                                course_id=course_id
+                            )
+                            
+                            # Voeg course_id toe aan elke member record
+                            for member in members_data:
+                                member['course_id'] = course_id
+                            
+                            logging.debug(f"Course {course_id}: {len(members_data)} members")
+                            return members_data
+                            
+                        except Exception as e:
+                            error_msg = str(e)
+                            is_server_error = '500' in error_msg or 'Internal Server Error' in error_msg
+                            
+                            if attempt < max_retries - 1:
+                                # Exponential backoff
+                                delay = base_delay * (2 ** attempt)
+                                if is_server_error:
+                                    delay *= 2  # Langere delay voor server errors
+                                
+                                logging.warning(f"Fout bij course {course_id} (poging {attempt + 1}/{max_retries}): {e}")
+                                logging.debug(f"Retry over {delay} seconden...")
+                                
+                                import time
+                                time.sleep(delay)
+                            else:
+                                logging.error(f"Definitieve fout bij course {course_id} na {max_retries} pogingen: {e}")
+                                return []
                     
-                    all_les_deelname.extend(members_data)
-                    logging.info(f"{len(members_data)} members gevonden voor course {course_id}")
+                    return []
+                
+                # Parallel processing met ThreadPoolExecutor
+                max_workers = min(10, len(past_lessons))  # Max 10 parallel workers
+                max_errors = 20  # Stop als te veel errors
+                
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    # Submit all tasks
+                    future_to_les = {
+                        executor.submit(process_course_members, les): les 
+                        for les in past_lessons
+                    }
                     
-                except Exception as e:
-                    logging.error(f"Fout bij ophalen members voor course {course_id}: {e}")
-                    continue
+                    # Collect results as they complete
+                    completed = 0
+                    errors = 0
+                    
+                    for future in as_completed(future_to_les):
+                        les = future_to_les[future]
+                        try:
+                            result = future.result()
+                            all_les_deelname.extend(result)
+                            completed += 1
+                            
+                            if completed % 10 == 0:  # Progress update every 10 courses
+                                logging.info(f"Verwerkt: {completed}/{len(past_lessons)} lessen")
+                                
+                        except Exception as e:
+                            course_id = les.get('Id', 'unknown')
+                            logging.error(f"Fout bij toekomst voor course {course_id}: {e}")
+                            errors += 1
+                            
+                            # Stop als te veel errors
+                            if errors >= max_errors:
+                                error_rate = (errors / (completed + errors)) * 100
+                                logging.error(f"Te veel errors ({errors}) - stop parallel processing. Error rate: {error_rate:.1f}%")
+                                break
+                    
+                    # Log final error rate
+                    if errors > 0:
+                        error_rate = (errors / (completed + errors)) * 100
+                        logging.warning(f"Parallel processing voltooid met {errors} errors - error rate: {error_rate:.1f}%")
+                
+                logging.info(f"Parallel processing voltooid - {len(all_les_deelname)} records opgehaald voor {len(past_lessons)} lessen")
+                
+            else:
+                # Fallback voor kleine datasets - sequentieel
+                logging.info("Kleine dataset - gebruik sequentiële verwerking")
+                
+                for les in past_lessons:
+                    course_id = les.get('Id') or les.get('id')
+                    if not course_id:
+                        logging.warning(f"Geen course ID gevonden voor les: {les}")
+                        continue
+                    
+                    try:
+                        logging.info(f"Haalt members op voor course: {course_id}")
+                        
+                        # Haal members op voor deze course
+                        members_data = self.extractor.api_client.extract_endpoint_data(
+                            'courses_members', 
+                            course_id=course_id
+                        )
+                        
+                        # Voeg course_id toe aan elke member record
+                        for member in members_data:
+                            member['course_id'] = course_id
+                        
+                        all_les_deelname.extend(members_data)
+                        logging.info(f"{len(members_data)} members gevonden voor course {course_id}")
+                        
+                    except Exception as e:
+                        logging.error(f"Fout bij ophalen members voor course {course_id}: {e}")
+                        continue
             
             logging.info(f"Totaal {len(all_les_deelname)} lesdeelname records geëxtraheerd")
             return all_les_deelname
@@ -446,12 +545,17 @@ class PipelineRunner:
 
             endpoint_name = self._get_endpoint_name_for_table('AbonnementStatistiekenSpecifiek')
             
-            # Bepaal datumrange (eenmalig)
+            # Bepaal datumrange - gebruik historische range als beschikbaar, anders dagelijkse range
             if historical and start_date and end_date:
+                # Gebruik de opgegeven historische datum range
+                from datetime import datetime
                 sdt = datetime.strptime(start_date, '%Y-%m-%d').date()
                 edt = datetime.strptime(end_date, '%Y-%m-%d').date()
+                logging.info(f"Gebruik historische datum range voor date_truncate: {sdt} tot {edt}")
             else:
+                # Gebruik standaard dagelijkse range
                 sdt, edt = self.extractor.api_client.get_date_range_for_endpoint(endpoint_name)
+                logging.info(f"Gebruik dagelijkse datum range voor date_truncate: {sdt} tot {edt}")
 
             logging.info(f"Parallel processing voor {len(memberships)} abonnementen - periode: {sdt} tot {edt}")
 
@@ -667,7 +771,12 @@ class PipelineRunner:
             table_config = self.schema_config['tables'].get(table_name, {})
             update_strategy = table_config.get('update_strategy', 'upsert')
             
-            loaded_count = self.db_manager.load_table_data(table_name, data, update_strategy)
+            # Pass historical end date for date_truncate strategy
+            historical_end_date = None
+            if update_strategy == 'date_truncate' and hasattr(self, '_current_historical_end_date'):
+                historical_end_date = self._current_historical_end_date
+            
+            loaded_count = self.db_manager.load_table_data(table_name, data, update_strategy, historical_end_date)
             
             duration = self.perf_logger.end_timer(f"load_{table_name}")
             logging.info(f"Data laden voltooid - tabel: {table_name}, geladen rijen: {loaded_count}, duur: {duration}")
@@ -793,6 +902,13 @@ class PipelineRunner:
             Dictionary met pipeline uitvoeringsresultaten
         """
         self.execution_id = f"tree11_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Store historical end date for date_truncate strategy
+        if historical and end_date:
+            self._current_historical_end_date = end_date
+            logging.info(f"Historical end date set for date_truncate: {end_date}")
+        else:
+            self._current_historical_end_date = None
         
         # Voeg historische info toe aan de uitvoerings-ID als in historische modus
         if historical:

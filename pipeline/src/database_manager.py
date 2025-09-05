@@ -246,14 +246,15 @@ class DatabaseManager:
             logger.error(f"Record count query failed - table={table_name}, error={str(e)}")
             return 0
 
-    def load_table_data(self, table_name: str, data: List[Dict], update_strategy: str = 'upsert') -> int:
+    def load_table_data(self, table_name: str, data: List[Dict], update_strategy: str = 'upsert', historical_end_date: str = None) -> int:
         """
         Load data into a database table with optimized performance
         
         Args:
             table_name: Name of the target table
             data: List of dictionaries containing the data to load
-            update_strategy: Strategy for handling existing data ('insert', 'replace', 'upsert')
+            update_strategy: Strategy for handling existing data ('insert', 'replace', 'upsert', 'date_truncate')
+            historical_end_date: End date for historical data (for date_truncate strategy)
             
         Returns:
             Number of records loaded
@@ -287,7 +288,7 @@ class DatabaseManager:
             # Only use for very large datasets to avoid parameter limit issues
             if records_count > 5000:
                 logger.info(f"Zeer grote dataset gedetecteerd ({records_count} records) - gebruik geoptimaliseerde bulk operaties")
-                return self._load_large_dataset(table_name, df, update_strategy, composite_keys)
+                return self._load_large_dataset(table_name, df, update_strategy, composite_keys, historical_end_date)
             
             with self.get_connection() as conn:
                 # Handle different update strategies
@@ -317,7 +318,11 @@ class DatabaseManager:
                         
                 elif update_strategy == 'date_truncate':
                     # For date_truncate strategy: delete data from last N days and insert new data
-                    self._perform_date_truncate(conn, table_name, df)
+                    self._perform_date_truncate(conn, table_name, df, historical_end_date)
+                    
+                elif update_strategy == 'lesid_truncate':
+                    # For lesid_truncate strategy: delete data for specific LesIds and insert new data
+                    self._perform_lesid_truncate(conn, table_name, df)
                         
                 else:
                     raise ValueError(f"Unsupported update strategy: {update_strategy}")
@@ -330,7 +335,7 @@ class DatabaseManager:
             logger.error(f"Failed to load data into {table_name}: {e}")
             raise DatabaseError(f"Failed to load data into {table_name}: {e}")
     
-    def _load_large_dataset(self, table_name: str, df: pd.DataFrame, update_strategy: str, composite_keys: List[str]) -> int:
+    def _load_large_dataset(self, table_name: str, df: pd.DataFrame, update_strategy: str, composite_keys: List[str], historical_end_date: str = None) -> int:
         """
         Load large datasets using optimized bulk operations
         
@@ -339,6 +344,7 @@ class DatabaseManager:
             df: DataFrame with data to load
             update_strategy: Strategy for handling existing data
             composite_keys: List of composite primary keys
+            historical_end_date: End date for historical data (for date_truncate strategy)
             
         Returns:
             Number of records loaded
@@ -366,8 +372,76 @@ class DatabaseManager:
                         self._enable_indexes(conn, table_name)
                         
                 elif update_strategy == 'upsert':
-                    # Optimized bulk upsert for large datasets
-                    self._perform_bulk_upsert(conn, table_name, df, composite_keys)
+                    # Fast bulk upsert: DELETE + INSERT (much faster than MERGE for large datasets)
+                    with conn.begin():
+                        # Get primary keys for deletion
+                        if len(composite_keys) > 1:
+                            # Composite primary key - delete by all key combinations
+                            primary_keys = composite_keys
+                        else:
+                            # Single primary key
+                            primary_key = self._get_primary_key(table_name)
+                            primary_keys = [primary_key] if primary_key else []
+                        
+                        if primary_keys and all(pk in df.columns for pk in primary_keys):
+                            # Remove duplicates first
+                            original_count = len(df)
+                            df_clean = df.drop_duplicates(subset=primary_keys, keep='last')
+                            duplicate_count = original_count - len(df_clean)
+                            
+                            if duplicate_count > 0:
+                                logger.info(f"{duplicate_count} Duplicaten verwijderd uit DataFrame: {table_name}")
+                                df = df_clean
+                            
+                            # Delete existing records
+                            if len(primary_keys) == 1:
+                                # Single key - use IN clause
+                                key_values = df[primary_keys[0]].unique().tolist()
+                                if key_values:
+                                    # Use SQL Server parameter syntax
+                                    placeholders = ','.join([f':param{i}' for i in range(len(key_values))])
+                                    delete_query = f"DELETE FROM [{self.config['database']['schema']}].[{table_name}] WHERE {primary_keys[0]} IN ({placeholders})"
+                                    params = {f'param{i}': val for i, val in enumerate(key_values)}
+                                    conn.execute(text(delete_query), params)
+                                    logger.debug(f"Deleted existing records for {len(key_values)} unique keys - table={table_name}")
+                            else:
+                                # Composite key - delete in batches
+                                batch_size = 1000
+                                for i in range(0, len(df), batch_size):
+                                    batch = df.iloc[i:i + batch_size]
+                                    conditions = []
+                                    params = {}
+                                    param_counter = 0
+                                    
+                                    for _, row in batch.iterrows():
+                                        condition_parts = []
+                                        for key in primary_keys:
+                                            param_name = f'param{param_counter}'
+                                            condition_parts.append(f"{key} = :{param_name}")
+                                            params[param_name] = row[key]
+                                            param_counter += 1
+                                        conditions.append(f"({' AND '.join(condition_parts)})")
+                                    
+                                    if conditions:
+                                        delete_query = f"DELETE FROM [{self.config['database']['schema']}].[{table_name}] WHERE {' OR '.join(conditions)}"
+                                        conn.execute(text(delete_query), params)
+                                
+                                logger.debug(f"Deleted existing records in batches - table={table_name}")
+                            
+                            # Fast bulk insert
+                            self._bulk_insert_data(conn, table_name, df)
+                        else:
+                            # No primary key - just insert
+                            logger.warning(f"No primary key found for upsert - table={table_name}, using simple insert")
+                            self._bulk_insert_data(conn, table_name, df)
+                    
+                elif update_strategy == 'date_truncate':
+                    # For date_truncate strategy: delete data from last N days and insert new data
+                    self._perform_date_truncate(conn, table_name, df, historical_end_date)
+                    
+                elif update_strategy == 'lesid_truncate':
+                    # For lesid_truncate strategy: delete data for specific LesIds and insert new data
+                    self._perform_lesid_truncate(conn, table_name, df)
                     
                 else:
                     # Simple bulk insert
@@ -382,7 +456,7 @@ class DatabaseManager:
     
     def _bulk_insert_data(self, conn, table_name: str, df: pd.DataFrame):
         """
-        Optimized bulk insert using SQL Server BULK INSERT or fast pandas to_sql
+        Optimized bulk insert using fast pandas to_sql with executemany
         
         Args:
             conn: Database connection
@@ -390,25 +464,43 @@ class DatabaseManager:
             df: DataFrame with data to insert
         """
         try:
-            # Use optimized pandas to_sql with smaller chunks to avoid parameter limit
-            # SQL Server has a limit of 2100 parameters per query
-            # Calculate safe chunk size based on number of columns
+            # Use fast pandas to_sql with executemany for better performance
             num_columns = len(df.columns)
-            max_params_per_query = 2000  # Safe limit below 2100
-            chunk_size = max(1, max_params_per_query // num_columns)
+            # Reduce chunk size for tables with many parameters to avoid SQL parameter limits
+            if table_name == 'LesDeelname':
+                chunk_size = 50  # Very small chunks for LesDeelname to avoid SQL parameter limits
+            elif table_name == 'AbonnementStatistiekenSpecifiek':
+                chunk_size = 100  # Small chunks for AbonnementStatistiekenSpecifiek to avoid SQL parameter limits
+            else:
+                chunk_size = 1000  # Optimal chunk size for other tables
             
             logger.debug(f"Bulk insert configuratie - tabel: {table_name}, kolommen: {num_columns}, chunk_size: {chunk_size}")
             
+            # Use different methods based on table type
             for i in range(0, len(df), chunk_size):
                 chunk = df.iloc[i:i + chunk_size]
-                chunk.to_sql(
-                    name=table_name,
-                    con=conn,
-                    schema=self.config['database']['schema'],
-                    if_exists='append',
-                    index=False,
-                    method=None  # Use default method to avoid parameter issues
-                )
+                
+                if table_name in ['LesDeelname', 'AbonnementStatistiekenSpecifiek']:
+                    # For tables with many parameters, use single row inserts to avoid parameter limit issues
+                    chunk.to_sql(
+                        name=table_name,
+                        con=conn,
+                        schema=self.config['database']['schema'],
+                        if_exists='append',
+                        index=False,
+                        method=None  # Use single row inserts to avoid parameter limits
+                    )
+                else:
+                    # For other tables, use executemany for better performance
+                    chunk.to_sql(
+                        name=table_name,
+                        con=conn,
+                        schema=self.config['database']['schema'],
+                        if_exists='append',
+                        index=False,
+                        method='multi'  # Use executemany for much faster inserts
+                    )
+                
                 logger.debug(f"Bulk insert chunk {i//chunk_size + 1} - tabel: {table_name}, records: {len(chunk)}")
                 
         except Exception as e:
@@ -584,6 +676,9 @@ class DatabaseManager:
             ],
             'ProductVerkopen': [
                 'ProductVerkopenID', 'Datum', 'Product', 'ProductID', 'Aantal', 'DatumLaatsteUpdate'
+            ],
+            'LesDeelname': [
+                'LesId', 'AccountId', 'Type', 'Status', 'Naam', 'Aanwezig', 'DatumLaatsteUpdate'
             ]
         }
         
@@ -945,7 +1040,7 @@ class DatabaseManager:
             logger.error(f"Composite UPSERT operation failed - table={table_name}, error={str(e)}")
             raise
     
-    def _perform_date_truncate(self, conn, table_name: str, df: pd.DataFrame):
+    def _perform_date_truncate(self, conn, table_name: str, df: pd.DataFrame, historical_end_date: str = None):
         """
         Perform date-based truncate operation: delete data from last N days and insert new data
         
@@ -953,6 +1048,7 @@ class DatabaseManager:
             conn: Database connection
             table_name: Name of target table
             df: DataFrame with data to insert
+            historical_end_date: End date for historical data (if None, uses today)
         """
         try:
             # Get the date truncate configuration from schema mappings
@@ -962,7 +1058,26 @@ class DatabaseManager:
             
             # Calculate the cutoff date (N days ago)
             from datetime import datetime, timedelta
-            cutoff_date = datetime.now().date() - timedelta(days=date_truncate_days)
+            if historical_end_date:
+                # For historical data, use the end date as reference
+                end_date = datetime.strptime(historical_end_date, '%Y-%m-%d').date()
+                cutoff_date = end_date - timedelta(days=date_truncate_days)
+                logger.info(f"Historical date truncate - using end_date={end_date} as reference")
+            else:
+                # For daily data, use today as reference
+                cutoff_date = datetime.now().date() - timedelta(days=date_truncate_days)
+            
+            # For historical data, also check if we need to truncate based on the actual data range
+            if historical_end_date and not df.empty:
+                # Get the actual date range from the data
+                data_dates = pd.to_datetime(df[date_column]).dt.date
+                min_data_date = data_dates.min()
+                max_data_date = data_dates.max()
+                
+                # Use the broader range for truncation
+                actual_cutoff = min(cutoff_date, min_data_date)
+                logger.info(f"Historical data range detected - min_date={min_data_date}, max_date={max_data_date}, using cutoff={actual_cutoff}")
+                cutoff_date = actual_cutoff
             
             logger.info(f"Date truncate operation - table={table_name}, cutoff_date={cutoff_date}, days_back={date_truncate_days}, date_column={date_column}")
             
@@ -978,8 +1093,41 @@ class DatabaseManager:
                 
                 logger.info(f"Deleted {deleted_count} records from last {date_truncate_days} days - table={table_name}")
                 
+                # Remove duplicates from DataFrame before insert
+                if not df.empty:
+                    # Group by primary key columns and sum the 'Aantal' field
+                    primary_key_cols = ['Datum', 'Categorie', 'Type', 'AbonnementId']
+                    if all(col in df.columns for col in primary_key_cols):
+                        df_deduplicated = df.groupby(primary_key_cols, as_index=False).agg({
+                            'Aantal': 'sum',  # Sum the counts
+                            'DatumLaatsteUpdate': 'max'  # Keep the latest update time
+                        })
+                        
+                        if len(df_deduplicated) < len(df):
+                            logger.info(f"Removed {len(df) - len(df_deduplicated)} duplicate records before insert - table={table_name}")
+                            df = df_deduplicated
+                
                 # Insert new data
                 self._bulk_insert_data(conn, table_name, df)
+                
+                # Verify no duplicates after insert
+                verify_query = f"""
+                SELECT Datum, Categorie, Type, AbonnementId, COUNT(*) as count
+                FROM [{self.config['database']['schema']}].[{table_name}]
+                WHERE CAST({date_column} AS DATE) >= :cutoff_date
+                GROUP BY Datum, Categorie, Type, AbonnementId
+                HAVING COUNT(*) > 1
+                """
+                
+                verify_result = conn.execute(text(verify_query), {'cutoff_date': cutoff_date})
+                duplicates = verify_result.fetchall()
+                
+                if duplicates:
+                    logger.warning(f"Found {len(duplicates)} duplicate combinations after insert - table={table_name}")
+                    for dup in duplicates[:5]:  # Log first 5 duplicates
+                        logger.warning(f"Duplicate: {dup[0]} | {dup[1]} | {dup[2]} | {dup[3]} | Count: {dup[4]}")
+                else:
+                    logger.info(f"No duplicates found after insert - table={table_name}")
                 
                 logger.info(f"Date truncate completed - table={table_name}, deleted={deleted_count}, inserted={len(df)}")
                 
@@ -987,6 +1135,88 @@ class DatabaseManager:
             logger.error(f"Date truncate operation failed - table={table_name}, error={str(e)}")
             raise
     
+    def _perform_lesid_truncate(self, conn, table_name: str, df: pd.DataFrame):
+        """
+        Perform LesID-based truncate operation: delete data for specific LesIds and insert new data
+        
+        Args:
+            conn: Database connection
+            table_name: Name of target table
+            df: DataFrame with data to insert
+        """
+        try:
+            if table_name != 'LesDeelname':
+                logger.warning(f"LesID truncate strategy only supported for LesDeelname table - table={table_name}")
+                # Fallback to simple insert
+                self._bulk_insert_data(conn, table_name, df)
+                return
+            
+            if df.empty:
+                logger.warning("No data provided for LesID truncate operation")
+                return
+            
+            # Extract unique LesIds from the DataFrame
+            if 'LesId' not in df.columns:
+                logger.error("LesId column not found in DataFrame for LesID truncate operation")
+                raise ValueError("LesId column is required for LesID truncate strategy")
+            
+            unique_les_ids = df['LesId'].dropna().unique().tolist()
+            
+            if not unique_les_ids:
+                logger.warning("No valid LesIds found in DataFrame")
+                return
+            
+            logger.info(f"LesID truncate operation - table={table_name}, unique_les_ids={len(unique_les_ids)}")
+            
+            with conn.begin():
+                # Delete existing data for the specific LesIds
+                # Process in batches to avoid SQL Server parameter limit (2100 parameters)
+                batch_size = 1000
+                total_deleted = 0
+                
+                for i in range(0, len(unique_les_ids), batch_size):
+                    batch = unique_les_ids[i:i + batch_size]
+                    
+                    # Create placeholders for the IN clause using named parameters
+                    placeholders = ', '.join([f':lesid_{j}' for j in range(len(batch))])
+                    
+                    # Delete existing records for these LesIds
+                    delete_query = f"""
+                    DELETE FROM [{self.config['database']['schema']}].[{table_name}]
+                    WHERE [LesId] IN ({placeholders})
+                    """
+                    
+                    # Create parameter dict
+                    params = {f'lesid_{j}': val for j, val in enumerate(batch)}
+                    
+                    logger.debug(f"Executing DELETE batch {i//batch_size + 1} - table={table_name}, batch_size={len(batch)}")
+                    
+                    result = conn.execute(text(delete_query), params)
+                    deleted_count = result.rowcount if result.rowcount else 0
+                    total_deleted += deleted_count
+                
+                logger.info(f"Deleted {total_deleted} existing records for {len(unique_les_ids)} LesIds - table={table_name}")
+                
+                # Remove duplicates from DataFrame before insert
+                if not df.empty:
+                    # Remove duplicates based on composite primary key (LesId, AccountId)
+                    original_count = len(df)
+                    df_clean = df.drop_duplicates(subset=['LesId', 'AccountId'], keep='last')
+                    duplicate_count = original_count - len(df_clean)
+                    
+                    if duplicate_count > 0:
+                        logger.info(f"Removed {duplicate_count} duplicate records before insert - table={table_name}")
+                        df = df_clean
+                
+                # Insert new data using optimized bulk insert
+                self._bulk_insert_data(conn, table_name, df)
+                
+                logger.info(f"LesID truncate completed - table={table_name}, deleted={total_deleted}, inserted={len(df)}")
+                
+        except Exception as e:
+            logger.error(f"LesID truncate operation failed - table={table_name}, error={str(e)}")
+            raise
+
     def _get_schema_config(self, table_name: str) -> dict:
         """
         Get schema configuration for a table
