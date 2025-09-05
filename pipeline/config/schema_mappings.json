@@ -2,7 +2,7 @@
   "tables": {
     "Leden": {
       "source_endpoint": "api.gymly.io_users",
-      "update_strategy": "upsert",
+      "update_strategy": "replace",
       "primary_key": "Id",
       "frequency": "daily",
       "columns": {

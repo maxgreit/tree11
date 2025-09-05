@@ -16,7 +16,7 @@
   },
   "update_strategies": {
     "Leden": {
-      "strategy": "upsert",
+      "strategy": "replace",
       "frequency": "daily",
       "batch_size": 1000,
       "enable_soft_delete": false
