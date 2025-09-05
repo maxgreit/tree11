@@ -432,11 +432,13 @@
         }
       }
     },
-    "OpenstaandeFacturen": {
-      "source_endpoint": "api.gymly.io_invoices",
-      "update_strategy": "replace",
+    "Facturen": {
+      "source_endpoint": "invoices",
+      "update_strategy": "date_truncate",
       "primary_key": "FactuurId",
       "frequency": "daily",
+      "date_truncate_days": 7,
+      "date_truncate_column": "AangemaaktOp",
       "columns": {
         "id": {
           "target_column": "FactuurId",
@@ -464,7 +466,7 @@
         },
         "status": {
           "target_column": "Status",
-          "sql_type": "NVARCHAR(20)",
+          "sql_type": "NVARCHAR(50)",
           "transformation": "direct",
           "required": false
         },
@@ -472,7 +474,7 @@
           "target_column": "Bedrag",
           "sql_type": "DECIMAL(10,2)",
           "transformation": "decimal",
-          "required": false
+          "required": true
         },
         "currency": {
           "target_column": "Valuta",
@@ -480,11 +482,23 @@
           "transformation": "direct",
           "required": false
         },
+        "dueDate": {
+          "target_column": "Vervaldatum",
+          "sql_type": "DATE",
+          "transformation": "parse_date",
+          "required": false
+        },
+        "ledgerGroupId": {
+          "target_column": "GrootboekID",
+          "sql_type": "NVARCHAR(50)",
+          "transformation": "direct",
+          "required": false
+        },
         "createdAt": {
           "target_column": "AangemaaktOp",
           "sql_type": "DATETIME2",
           "transformation": "iso_datetime",
-          "required": false
+          "required": true
         }
       }
     },

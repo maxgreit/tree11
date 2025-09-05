@@ -42,7 +42,7 @@
       "archive_old_records": true,
       "archive_after_days": 365
     },
-    "OpenstaandeFacturen": {
+    "Facturen": {
       "strategy": "replace",
       "frequency": "daily",
       "batch_size": 500,

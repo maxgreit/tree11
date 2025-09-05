@@ -487,48 +487,236 @@ class GymlyAPIClient:
             all_data.extend(data)
             
         elif pagination_type == 'page_based':
-            # Page-based pagination
-            page = 0  # API gebruikt 0-based indexing
-            page_size = pagination_config.get('default_size', 100)
+            # Check if parallel pagination is enabled
+            enable_parallel = pagination_config.get('enable_parallel', False)
             
-            while True:
-                page_params = {
-                    pagination_config['page_param']: page,
-                    pagination_config['size_param']: page_size
-                }
-                
-                url = self._build_url(endpoint_name, **params)
-                
-                # Log the full URL and parameters for debugging (first page only)
-                if page == 0:
-                    payment_type = params.get('payment_type', 'UNKNOWN')
-                
-                response = self._make_request(url, page_params)
-                data, pagination_info = self._extract_data_from_response(response, endpoint_config)
-                
-                if not data:
-                    break
-                
-                all_data.extend(data)
-                
-                # Log page results
-                logging.info(f"Opgehaalde rijen voor {endpoint_name}: {len(all_data)} (pagina {page})")
-                
-                # Check if we have more pages
-                if pagination_info:
-                    current_page = pagination_info.get('currentPage', page)
-                    total_pages = pagination_info.get('totalPages', 1)
-                    
-                    if current_page >= total_pages:
-                        break
-                
-                page += 1
-                
-                # Safety check to prevent infinite loops
-                if page > 1000:
-                    logging.error(f"Te veel pagina's, stoppen met pagineren")
-                    break
+            if enable_parallel:
+                all_data = self._extract_paginated_data_parallel(endpoint_name, endpoint_config, params)
+            else:
+                all_data = self._extract_paginated_data_sequential(endpoint_name, endpoint_config, params)
         
+        return all_data
+    
+    def _extract_paginated_data_sequential(self, endpoint_name: str, endpoint_config: dict, params: dict) -> List[Dict]:
+        """Sequential page-based pagination (original method)"""
+        pagination_config = endpoint_config.get('pagination', {})
+        all_data = []
+        
+        page = 0  # API gebruikt 0-based indexing
+        page_size = pagination_config.get('default_size', 100)
+        
+        while True:
+            page_params = {
+                pagination_config['page_param']: page,
+                pagination_config['size_param']: page_size
+            }
+            
+            url = self._build_url(endpoint_name, **params)
+            
+            # Log the full URL and parameters for debugging (first page only)
+            if page == 0:
+                payment_type = params.get('payment_type', 'UNKNOWN')
+            
+            # Make request with retry logic
+            max_retries = 3
+            base_delay = 2  # seconds - verhoogd van 1 naar 2
+            success = False
+            
+            for attempt in range(max_retries):
+                try:
+                    response = self._make_request(url, page_params)
+                    data, pagination_info = self._extract_data_from_response(response, endpoint_config)
+                    success = True
+                    break
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    is_server_error = '500' in error_msg or 'Internal Server Error' in error_msg
+                    
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        if is_server_error:
+                            delay *= 3  # Veel langere delay voor server errors (3x in plaats van 2x)
+                        
+                        logging.warning(f"Fout bij pagina {page} (poging {attempt + 1}/{max_retries}): {e}")
+                        logging.info(f"Retry over {delay} seconden...")
+                        
+                        import time
+                        time.sleep(delay)
+                    else:
+                        logging.error(f"Definitieve fout bij pagina {page} na {max_retries} pogingen: {e}")
+                        break
+            
+            if not success:
+                break
+                
+            if not data:
+                break
+            
+            all_data.extend(data)
+            
+            # Log page results
+            logging.info(f"Opgehaalde rijen voor {endpoint_name}: {len(all_data)} (pagina {page})")
+            
+            # Check if we have more pages
+            if pagination_info:
+                current_page = pagination_info.get('currentPage', page)
+                total_pages = pagination_info.get('totalPages', 1)
+                
+                if current_page >= total_pages:
+                    break
+            
+            page += 1
+            
+            # Safety check to prevent infinite loops
+            if page > 10000:  # Verhoogd voor grote datasets
+                logging.error(f"Te veel pagina's, stoppen met pagineren")
+                break
+        
+        return all_data
+    
+    def _extract_paginated_data_parallel(self, endpoint_name: str, endpoint_config: dict, params: dict) -> List[Dict]:
+        """Parallel page-based pagination for better performance"""
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import threading
+        
+        pagination_config = endpoint_config.get('pagination', {})
+        page_size = pagination_config.get('default_size', 100)
+        max_workers = pagination_config.get('max_parallel_workers', 6)
+        
+        logging.info(f"Parallel pagination voor {endpoint_name} - max_workers: {max_workers}")
+        
+        all_data = []
+        max_pages = 10000  # Safety limit - verhoogd voor grote datasets
+        
+        def extract_page(page_num):
+            """Extract single page - thread-safe with retry logic"""
+            max_retries = 3
+            base_delay = 2  # seconds - verhoogd van 1 naar 2
+            
+            for attempt in range(max_retries):
+                try:
+                    page_params = {
+                        pagination_config['page_param']: page_num,
+                        pagination_config['size_param']: page_size
+                    }
+                    
+                    url = self._build_url(endpoint_name, **params)
+                    response = self._make_request(url, page_params)
+                    data, pagination_info = self._extract_data_from_response(response, endpoint_config)
+                    
+                    if data:
+                        logging.debug(f"Pagina {page_num} opgehaald: {len(data)} records")
+                    
+                    return data, pagination_info, page_num
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    is_server_error = '500' in error_msg or 'Internal Server Error' in error_msg
+                    
+                    if attempt < max_retries - 1:
+                        # Exponential backoff with longer delays
+                        delay = base_delay * (2 ** attempt)
+                        if is_server_error:
+                            delay *= 3  # Veel langere delay voor server errors (3x in plaats van 2x)
+                        
+                        logging.warning(f"Fout bij pagina {page_num} (poging {attempt + 1}/{max_retries}): {e}")
+                        logging.info(f"Retry over {delay} seconden...")
+                        
+                        import time
+                        time.sleep(delay)
+                    else:
+                        logging.error(f"Definitieve fout bij pagina {page_num} na {max_retries} pogingen: {e}")
+                        return [], None, page_num
+            
+            return [], None, page_num
+        
+        # Parallel processing - improved logic with error handling
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            completed_pages = set()
+            page_data = {}  # Store data by page number for ordering
+            futures = {}  # Track all futures
+            next_page = 0
+            consecutive_empty_pages = 0
+            max_consecutive_empty = 3  # Stop after 3 consecutive empty pages
+            
+            # Error tracking
+            error_count = 0
+            max_errors = 10  # Stop after 10 errors
+            error_rate_threshold = 0.3  # Stop if error rate > 30%
+            
+            # Submit initial batch
+            for i in range(min(max_workers, max_pages)):
+                future = executor.submit(extract_page, i)
+                futures[future] = i
+                next_page = i + 1
+            
+            # Process results and submit more pages
+            while futures:
+                # Wait for any future to complete
+                done_futures = []
+                for future in as_completed(futures, timeout=30):
+                    page_num = futures[future]
+                    done_futures.append(future)
+                    
+                    try:
+                        data, pagination_info, actual_page = future.result()
+                        
+                        if data:
+                            page_data[actual_page] = data
+                            completed_pages.add(actual_page)
+                            consecutive_empty_pages = 0  # Reset counter
+                            logging.debug(f"Pagina {actual_page} voltooid: {len(data)} records")
+                        else:
+                            consecutive_empty_pages += 1
+                            logging.debug(f"Pagina {actual_page} leeg")
+                        
+                        # Submit next page if we haven't reached limits
+                        if (next_page < max_pages and 
+                            consecutive_empty_pages < max_consecutive_empty and
+                            next_page not in completed_pages):
+                            
+                            new_future = executor.submit(extract_page, next_page)
+                            futures[new_future] = next_page
+                            next_page += 1
+                        
+                        # Progress logging
+                        if len(completed_pages) % 10 == 0:
+                            total_records = sum(len(d) for d in page_data.values())
+                            logging.info(f"Parallel pagination voortgang: {len(completed_pages)} pagina's, {total_records} records")
+                            
+                    except Exception as e:
+                        error_count += 1
+                        logging.error(f"Fout bij verwerken pagina {page_num}: {e}")
+                        consecutive_empty_pages += 1
+                        
+                        # Check error rate
+                        total_attempts = len(completed_pages) + error_count
+                        if total_attempts > 0:
+                            error_rate = error_count / total_attempts
+                            if error_rate > error_rate_threshold:
+                                logging.error(f"Error rate te hoog ({error_rate:.1%}), stoppen met paginering")
+                                break
+                        
+                        # Check max errors
+                        if error_count >= max_errors:
+                            logging.error(f"Te veel errors ({error_count}), stoppen met paginering")
+                            break
+                
+                # Remove completed futures
+                for future in done_futures:
+                    del futures[future]
+                
+                # Stop if we have too many consecutive empty pages
+                if consecutive_empty_pages >= max_consecutive_empty:
+                    logging.info(f"Stoppen na {consecutive_empty_pages} opeenvolgende lege pagina's")
+                    break
+            
+            # Collect data in page order
+            for page_num in sorted(page_data.keys()):
+                all_data.extend(page_data[page_num])
+        
+        logging.info(f"Parallel pagination voltooid: {len(all_data)} records uit {len(completed_pages)} pagina's")
         return all_data
     
     def get_date_range_for_endpoint(self, endpoint_name: str) -> Tuple[date, date]:
@@ -690,7 +878,7 @@ class DataExtractor:
                 'analytics_memberships_active',
                 'analytics_memberships_expired'
             ],
-            'OpenstaandeFacturen': 'invoices_pending',
+            'Facturen': 'invoices',
             'PersonalTraining': 'google_sheets',
             'ProductVerkopen': 'pos_statistics'
         }

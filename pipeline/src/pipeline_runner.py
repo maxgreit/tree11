@@ -69,7 +69,7 @@ class PipelineRunner:
             'LesDeelname': ['Lessen'], # LesDeelname depends on Lessen
             'AbonnementStatistieken': [], # Uit standaard pipeline gehaald, maar logica blijft behouden
             'AbonnementStatistiekenSpecifiek': ['Abonnementen'],
-            'OpenstaandeFacturen': [],
+            'Facturen': [],
             'PersonalTraining': [],
             'Uitbetalingen': []
         }
@@ -427,52 +427,93 @@ class PipelineRunner:
     def _extract_abonnement_statistieken_specifiek(self, historical: bool = False, start_date: str = None, end_date: str = None) -> List[Dict]:
         """
         Haalt per-abonnement analytics statistieken op voor meerdere categorieën en betalingsvormen.
-        Verwacht dat memberships (Abonnementen) eerst aanwezig zijn om op te itereren.
+        Gebruikt parallel processing voor betere performance.
         """
-        logging.info("Speciale extractie voor AbonnementStatistiekenSpecifiek - per abonnement")
+        logging.info("Speciale extractie voor AbonnementStatistiekenSpecifiek - parallel processing")
 
         try:
             # Haal lijst van abonnementen op (uit DB of via API). Hier via API om consistent te zijn.
-            memberships = self.extract_table_data('Abonnementen', historical=False)
+            # Cache de abonnementen lijst om herhaalde API calls te voorkomen
+            if not hasattr(self, '_cached_memberships') or self._cached_memberships is None:
+                logging.info("Abonnementen ophalen voor caching...")
+                self._cached_memberships = self.extract_table_data('Abonnementen', historical=False)
+                logging.info(f"Abonnementen gecached: {len(self._cached_memberships)} abonnementen")
+            
+            memberships = self._cached_memberships
             if not memberships:
                 logging.warning("Geen abonnementen gevonden voor specifieke analytics extractie")
                 return []
 
             endpoint_name = self._get_endpoint_name_for_table('AbonnementStatistiekenSpecifiek')
+            
+            # Bepaal datumrange (eenmalig)
+            if historical and start_date and end_date:
+                sdt = datetime.strptime(start_date, '%Y-%m-%d').date()
+                edt = datetime.strptime(end_date, '%Y-%m-%d').date()
+            else:
+                sdt, edt = self.extractor.api_client.get_date_range_for_endpoint(endpoint_name)
 
+            logging.info(f"Parallel processing voor {len(memberships)} abonnementen - periode: {sdt} tot {edt}")
+
+            # Parallel processing met ThreadPoolExecutor
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import threading
+            
             all_records: List[Dict] = []
-            for membership in memberships:
+            max_workers = min(10, len(memberships))  # Max 10 parallel workers
+            
+            def process_membership(membership):
+                """Process single membership - thread-safe"""
                 membership_id = membership.get('AbonnementId') or membership.get('id') or membership.get('Id')
                 if not membership_id:
-                    continue
+                    return []
+                
+                try:
+                    # Haal alle categorieën en payment types op voor dit membership
+                    endpoint_data = self.extractor.api_client.extract_endpoint_data(
+                        endpoint_name,
+                        start_date=sdt,
+                        end_date=edt,
+                        membership_id=membership_id
+                    )
 
-                # Roep analytics endpoint aan met membership filter
-                logging.info(f"Analytics per abonnement ophalen - membership_id={membership_id}")
-                # Bepaal datumrange
-                if historical and start_date and end_date:
-                    sdt = datetime.strptime(start_date, '%Y-%m-%d').date()
-                    edt = datetime.strptime(end_date, '%Y-%m-%d').date()
-                else:
-                    # Gebruik default datumrange voor deze endpoint (config: daily 30 dagen, granularity WEEK)
-                    sdt, edt = self.extractor.api_client.get_date_range_for_endpoint(endpoint_name)
+                    # Voeg membership_id in elke record voor transformatie
+                    for record in endpoint_data:
+                        record['membership_id'] = membership_id
+                        record['granularity'] = 'DAY'
 
-                # Haal alle categorieën en payment types op voor dit membership (granularity=DAY staat in config)
-                endpoint_data = self.extractor.api_client.extract_endpoint_data(
-                    endpoint_name,
-                    start_date=sdt,
-                    end_date=edt,
-                    membership_id=membership_id
-                )
+                    logging.debug(f"Abonnement {membership_id} verwerkt - {len(endpoint_data)} records")
+                    return endpoint_data
+                    
+                except Exception as e:
+                    logging.warning(f"Fout bij verwerken abonnement {membership_id}: {e}")
+                    return []
 
-                # Voeg membership_id in elke record voor transformatie
-                for record in endpoint_data:
-                    record['membership_id'] = membership_id
-                    # Granularity is DAY; WEEK-context niet meer nodig
-                    record['granularity'] = 'DAY'
+            # Parallel processing
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all tasks
+                future_to_membership = {
+                    executor.submit(process_membership, membership): membership 
+                    for membership in memberships
+                }
+                
+                # Collect results as they complete
+                completed = 0
+                for future in as_completed(future_to_membership):
+                    membership = future_to_membership[future]
+                    try:
+                        result = future.result()
+                        all_records.extend(result)
+                        completed += 1
+                        
+                        if completed % 20 == 0:  # Progress update every 20 abonnementen
+                            logging.info(f"Verwerkt: {completed}/{len(memberships)} abonnementen")
+                            
+                    except Exception as e:
+                        membership_id = membership.get('AbonnementId', 'unknown')
+                        logging.error(f"Fout bij toekomst voor abonnement {membership_id}: {e}")
 
-                all_records.extend(endpoint_data)
-
-            logging.info(f"Totaal {len(all_records)} records opgehaald voor AbonnementStatistiekenSpecifiek")
+            logging.info(f"Parallel processing voltooid - {len(all_records)} records opgehaald voor {len(memberships)} abonnementen")
             return all_records
 
         except Exception as e:
@@ -486,7 +527,7 @@ class PipelineRunner:
             'Abonnementen': 'memberships',
             'Lessen': 'activity_events',
             'LesDeelname': 'courses_members',
-            'OpenstaandeFacturen': 'invoices_pending',
+            'Facturen': 'invoices',
             'Omzet': 'analytics_revenue',
             'GrootboekRekening': 'analytics_revenue',
             'AbonnementStatistieken': ['analytics_memberships_new', 'analytics_memberships_paused', 

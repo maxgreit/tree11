@@ -80,9 +80,9 @@ uitbetalingen_taak = BashOperator(
         dag=dag,
 )
 
-openstaande_facturen_taak = BashOperator(
-        task_id='openstaande_facturen_taak',
-        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables OpenstaandeFacturen"),
+facturen_taak = BashOperator(
+        task_id='facturen_taak',
+        bash_command=venv_command("/home/greit/klanten/tree11/pipeline/main.py --tables Facturen"),
         cwd='/home/greit/klanten/tree11/pipeline',
         dag=dag,
 )
@@ -106,6 +106,6 @@ end_parallel_tasks = EmptyOperator(
 
 # Taak structuur
 start_parallel_tasks >> [
-    leden_taak, lessen_taak, lesdeelname_taak, grootboekrekening_taak, omzet_taak, product_verkoop_taak, uitbetalingen_taak, openstaande_facturen_taak, abonnement_statistieken_taak
+    leden_taak, lessen_taak, lesdeelname_taak, grootboekrekening_taak, omzet_taak, product_verkoop_taak, uitbetalingen_taak, facturen_taak, abonnement_statistieken_taak
 ] >> end_parallel_tasks
                           

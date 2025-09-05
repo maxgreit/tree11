@@ -566,9 +566,9 @@ class DatabaseManager:
                 'Valuta', 'VervalPeriode', 'ActivatieStrategie', 'AbonnementVereist',
                 'ConsumptieMethode', 'AutoVerlenging', 'GrootboekGroepId', 'Sectie', 'DatumLaatsteUpdate'
             ],
-            'OpenstaandeFacturen': [
-                'FactuurId', 'LedenId', 'Bedrag', 'Valuta', 'Status', 'Vervaldatum',
-                'AangemaaktOp', 'DatumLaatsteUpdate'
+            'Facturen': [
+                'FactuurId', 'Nummer', 'LedenId', 'Naam', 'Bedrag', 'Valuta', 'Status', 'Vervaldatum',
+                'GrootboekID', 'AangemaaktOp', 'DatumLaatsteUpdate'
             ],
             'AbonnementStatistieken': [
                 'Datum', 'Categorie', 'Type', 'Aantal', 'DatumLaatsteUpdate'
@@ -958,18 +958,19 @@ class DatabaseManager:
             # Get the date truncate configuration from schema mappings
             schema_config = self._get_schema_config(table_name)
             date_truncate_days = schema_config.get('date_truncate_days', 7)
+            date_column = schema_config.get('date_truncate_column', 'Datum')
             
             # Calculate the cutoff date (N days ago)
             from datetime import datetime, timedelta
             cutoff_date = datetime.now().date() - timedelta(days=date_truncate_days)
             
-            logger.info(f"Date truncate operation - table={table_name}, cutoff_date={cutoff_date}, days_back={date_truncate_days}")
+            logger.info(f"Date truncate operation - table={table_name}, cutoff_date={cutoff_date}, days_back={date_truncate_days}, date_column={date_column}")
             
             with conn.begin():
                 # Delete existing data from the last N days
                 delete_query = f"""
                 DELETE FROM [{self.config['database']['schema']}].[{table_name}]
-                WHERE Datum >= :cutoff_date
+                WHERE CAST({date_column} AS DATE) >= :cutoff_date
                 """
                 
                 result = conn.execute(text(delete_query), {'cutoff_date': cutoff_date})
@@ -1005,7 +1006,7 @@ class DatabaseManager:
             with open(config_path, 'r', encoding='utf-8') as f:
                 schema_mappings = json.load(f)
             
-            return schema_mappings.get(table_name, {})
+            return schema_mappings.get('tables', {}).get(table_name, {})
             
         except Exception as e:
             logger.warning(f"Could not load schema config for {table_name}: {str(e)}")

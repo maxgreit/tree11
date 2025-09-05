@@ -645,13 +645,29 @@ def main():
                     logging.info(f"Periode > 31 dagen ({total_days} dagen) - maandelijkse splitsing UITGESCHAKELD voor alle tabellen")
                     result = runner.run_pipeline(**pipeline_params)
                 else:
-                    # Splits tabellen in: maandelijks vs niet-maandelijks (per volledige periode)
+                    # Splits tabellen in: maandelijks vs wekelijks vs direct (per volledige periode)
                     excluded = [t.strip() for t in (args.no_monthly_split_tables or '').split(',') if t.strip()]
-                    monthly_tables = [t for t in specific_tables if t not in excluded]
+                    
+                    # Speciale behandeling voor Facturen - gebruik wekelijkse splitsing
+                    weekly_tables = [t for t in specific_tables if t == 'Facturen']
+                    monthly_tables = [t for t in specific_tables if t not in excluded and t != 'Facturen']
                     direct_tables = [t for t in specific_tables if t in excluded]
 
                     monthly_result = None
+                    weekly_result = None
                     direct_result = None
+
+                    if weekly_tables:
+                        logging.info(f"Periode > 31 dagen ({total_days} dagen) - verwerk per week: {weekly_tables}")
+                        weekly_result = run_weekly_pipeline(
+                            runner=runner,
+                            start_date=args.start_date,
+                            end_date=args.end_date,
+                            tables=weekly_tables,
+                            dry_run=args.dry_run,
+                            skip_health_checks=args.skip_health_checks,
+                            verbose=args.verbose
+                        )
 
                     if monthly_tables:
                         logging.info(f"Periode > 31 dagen ({total_days} dagen) - verwerk per maand: {monthly_tables}")
@@ -666,7 +682,7 @@ def main():
                         )
                     
                     if direct_tables:
-                        logging.info(f"Verwerk zónder maand-splitsing (volledige periode): {direct_tables}")
+                        logging.info(f"Verwerk zónder splitsing (volledige periode): {direct_tables}")
                         direct_params = dict(pipeline_params)
                         direct_params['tables'] = direct_tables
                         direct_result = runner.run_pipeline(**{
@@ -677,17 +693,29 @@ def main():
                         })
 
                     # Toon samenvattingen afzonderlijk en bepaal gecombineerde status
-                    if monthly_result and direct_result:
+                    if weekly_result:
+                        print_execution_summary(weekly_result)
+                    if monthly_result:
                         print_execution_summary(monthly_result)
+                    if direct_result:
                         print_execution_summary(direct_result)
                         # Combineer status voor exit-code
-                        statuses = {monthly_result.get('status'), direct_result.get('status')}
+                        statuses = set()
+                        if weekly_result:
+                            statuses.add(weekly_result.get('status'))
+                        if monthly_result:
+                            statuses.add(monthly_result.get('status'))
+                        if direct_result:
+                            statuses.add(direct_result.get('status'))
+                        
                         if 'error' in statuses:
                             result = {'status': 'error'}
                         elif 'partial_success' in statuses:
                             result = {'status': 'partial_success'}
                         else:
                             result = {'status': 'success'}
+                    elif weekly_result:
+                        result = weekly_result
                     elif monthly_result:
                         result = monthly_result
                     elif direct_result:

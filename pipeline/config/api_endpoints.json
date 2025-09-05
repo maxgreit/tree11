@@ -6,7 +6,7 @@
     "timeout": 60,
     "max_retries": 5,
     "retry_backoff_factor": 3,
-    "rate_limit_requests_per_minute": 30
+    "rate_limit_requests_per_minute": 60
   },
   "auth": {
     "type": "bearer",
@@ -25,7 +25,9 @@
         "page_param": "page",
         "size_param": "size",
         "default_size": 100,
-        "max_size": 1000
+        "max_size": 1000,
+        "enable_parallel": true,
+        "max_parallel_workers": 8
       },
       "response_type": "paginated",
       "data_path": "content",
@@ -76,7 +78,7 @@
       "table_mapping": "LesDeelname",
       "requires_course_ids": true
     },
-    "invoices_pending": {
+    "invoices": {
       "url_template": "{base_url}/v1/businesses/{business_id}/invoices",
       "method": "GET",
       "pagination": {
@@ -84,15 +86,23 @@
         "page_param": "page",
         "size_param": "size",
         "default_size": 100,
-        "max_size": 1000
+        "max_size": 1000,
+        "enable_parallel": true,
+        "max_parallel_workers": 6
       },
       "response_type": "paginated",
       "data_path": "content",
       "parameters": {
-        "status": "PENDING"
+        "startDate": "{start_date}",
+        "endDate": "{end_date}",
+        "locations": "{location_id}"
       },
-      "table_mapping": "OpenstaandeFacturen",
-      "note": "Re-enabled with Naam column support"
+      "date_range": {
+        "type": "daily",
+        "days_back": 7
+      },
+      "table_mapping": "Facturen",
+      "note": "Alle facturen met datum filtering"
     },
     "analytics_revenue": {
       "url_template": "{base_url}/v1/businesses/{business_id}/analytics/revenue",
@@ -265,7 +275,9 @@
         "page_param": "page",
         "size_param": "size",
         "default_size": 100,
-        "max_size": 1000
+        "max_size": 1000,
+        "enable_parallel": true,
+        "max_parallel_workers": 4
       },
       "response_type": "paginated",
       "data_path": "content",

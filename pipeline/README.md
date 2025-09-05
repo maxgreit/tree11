@@ -17,7 +17,7 @@ Deze pipeline haalt automatisch data op van verschillende bronnen, transformeert
 - `Lessen` - Les planning en bezetting (46+ per dag)
 - `Omzet` - Dagelijkse omzet cijfers
 - `GrootboekRekening` - Financiële categorieën
-- `OpenstaandeFacturen` - Nog te betalen facturen
+- `Facturen` - Alle facturen met datum filtering
 - `PersonalTraining` - PT sessies en uren
 - `Uitbetalingen` - Uitbetalingen en transactie overzichten
 - `ProductVerkopen` - Dagelijkse product verkopen per product

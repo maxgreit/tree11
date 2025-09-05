@@ -191,9 +191,9 @@ GO
 -- 9. OPENSTAANDE FACTUREN
 -- Bron: api.gymly.io_invoices_pending
 -- =====================================================================
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'OpenstaandeFacturen' AND schema_id = SCHEMA_ID('tree11'))
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Facturen' AND schema_id = SCHEMA_ID('tree11'))
 BEGIN
-    CREATE TABLE tree11.OpenstaandeFacturen (
+    CREATE TABLE tree11.Facturen (
         FactuurId NVARCHAR(50) NOT NULL,
         Nummer INT NULL,
         LedenId NVARCHAR(50) NULL,
@@ -203,10 +203,11 @@ BEGIN
         Status NVARCHAR(50) NULL,
         Vervaldatum DATE NULL,
         AangemaaktOp DATETIME2 NOT NULL,
+        GrootboekID NVARCHAR(50) NULL,
         DatumLaatsteUpdate DATETIME2 NOT NULL DEFAULT GETDATE()
     );
     
-    PRINT 'Tabel tree11.OpenstaandeFacturen aangemaakt';
+    PRINT 'Tabel tree11.Facturen aangemaakt';
 END
 GO
 
