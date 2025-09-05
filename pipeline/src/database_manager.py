@@ -765,15 +765,21 @@ class DatabaseManager:
                 if unique_pk_values:
                     with conn.begin():
                         # Process in batches to avoid SQL Server parameter limit (2100 parameters)
-                        # Use smaller batch size for tables with many records to avoid parameter limits
+                        # Use much smaller batch size for tables with many records to avoid parameter limits
                         if len(unique_pk_values) > 5000:
-                            batch_size = 500  # Smaller batches for very large datasets
+                            batch_size = 200  # Much smaller batches for very large datasets
+                        elif len(unique_pk_values) > 2000:
+                            batch_size = 300  # Medium batches for large datasets
                         else:
                             batch_size = 1000
                         total_deleted = 0
                         
+                        total_batches = (len(unique_pk_values) + batch_size - 1) // batch_size
+                        logger.info(f"Upsert processing - table={table_name}, total_records={len(unique_pk_values)}, batch_size={batch_size}, total_batches={total_batches}")
+                        
                         for i in range(0, len(unique_pk_values), batch_size):
                             batch = unique_pk_values[i:i + batch_size]
+                            batch_num = i // batch_size + 1
                             
                             # Create placeholders for the IN clause using named parameters
                             placeholders = ', '.join([f':pk_{j}' for j in range(len(batch))])
@@ -787,11 +793,12 @@ class DatabaseManager:
                             # Create parameter dict
                             params = {f'pk_{j}': val for j, val in enumerate(batch)}
                             
-                            logger.debug(f"Executing DELETE batch {i//batch_size + 1} - table={table_name}, batch_size={len(batch)}")
+                            logger.debug(f"Executing DELETE batch {batch_num}/{total_batches} - table={table_name}, batch_size={len(batch)}")
                             
                             result = conn.execute(text(delete_query), params)
                             deleted_count = result.rowcount if result.rowcount else 0
                             total_deleted += deleted_count
+                            logger.debug(f"Deleted {deleted_count} records from batch {batch_num}/{total_batches} - table={table_name}")
                         
                         logger.debug(f"Total deleted {total_deleted} conflicting records - table={table_name}, primary_key={primary_key}")
                         
