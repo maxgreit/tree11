@@ -9,7 +9,7 @@ Deze pipeline haalt automatisch data op van verschillende bronnen, transformeert
 ### Data Bronnen
 - **Gymly API**: Leden, abonnementen, lessen, omzet, en statistieken
 - **Google Sheets**: Personal Training uren en sessies
-
+123
 ### Database Tabellen
 - `Leden` - Alle ledeninformatie (5.866+ records)
 - `Abonnementen` - Abonnement types en prijzen (137 types)
