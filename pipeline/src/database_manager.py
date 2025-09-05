@@ -471,6 +471,8 @@ class DatabaseManager:
                 chunk_size = 50  # Very small chunks for LesDeelname to avoid SQL parameter limits
             elif table_name == 'AbonnementStatistiekenSpecifiek':
                 chunk_size = 100  # Small chunks for AbonnementStatistiekenSpecifiek to avoid SQL parameter limits
+            elif table_name == 'Leden':
+                chunk_size = 200  # Small chunks for Leden to avoid SQL parameter limits
             else:
                 chunk_size = 1000  # Optimal chunk size for other tables
             
@@ -480,7 +482,7 @@ class DatabaseManager:
             for i in range(0, len(df), chunk_size):
                 chunk = df.iloc[i:i + chunk_size]
                 
-                if table_name in ['LesDeelname', 'AbonnementStatistiekenSpecifiek']:
+                if table_name in ['LesDeelname', 'AbonnementStatistiekenSpecifiek', 'Leden']:
                     # For tables with many parameters, use single row inserts to avoid parameter limit issues
                     chunk.to_sql(
                         name=table_name,
@@ -763,7 +765,11 @@ class DatabaseManager:
                 if unique_pk_values:
                     with conn.begin():
                         # Process in batches to avoid SQL Server parameter limit (2100 parameters)
-                        batch_size = 1000
+                        # Use smaller batch size for tables with many records to avoid parameter limits
+                        if len(unique_pk_values) > 5000:
+                            batch_size = 500  # Smaller batches for very large datasets
+                        else:
+                            batch_size = 1000
                         total_deleted = 0
                         
                         for i in range(0, len(unique_pk_values), batch_size):
@@ -1068,6 +1074,7 @@ class DatabaseManager:
                 cutoff_date = datetime.now().date() - timedelta(days=date_truncate_days)
             
             # For historical data, also check if we need to truncate based on the actual data range
+            actual_days_back = date_truncate_days
             if historical_end_date and not df.empty:
                 # Get the actual date range from the data
                 data_dates = pd.to_datetime(df[date_column]).dt.date
@@ -1076,10 +1083,11 @@ class DatabaseManager:
                 
                 # Use the broader range for truncation
                 actual_cutoff = min(cutoff_date, min_data_date)
+                actual_days_back = (datetime.strptime(historical_end_date, '%Y-%m-%d').date() - actual_cutoff).days
                 logger.info(f"Historical data range detected - min_date={min_data_date}, max_date={max_data_date}, using cutoff={actual_cutoff}")
                 cutoff_date = actual_cutoff
             
-            logger.info(f"Date truncate operation - table={table_name}, cutoff_date={cutoff_date}, days_back={date_truncate_days}, date_column={date_column}")
+            logger.info(f"Date truncate operation - table={table_name}, cutoff_date={cutoff_date}, days_back={actual_days_back}, date_column={date_column}")
             
             with conn.begin():
                 # Delete existing data from the last N days
@@ -1091,7 +1099,10 @@ class DatabaseManager:
                 result = conn.execute(text(delete_query), {'cutoff_date': cutoff_date})
                 deleted_count = result.rowcount if result.rowcount else 0
                 
-                logger.info(f"Deleted {deleted_count} records from last {date_truncate_days} days - table={table_name}")
+                if historical_end_date:
+                    logger.info(f"Deleted {deleted_count} records from historical period (from {cutoff_date} to {historical_end_date}) - table={table_name}")
+                else:
+                    logger.info(f"Deleted {deleted_count} records from last {actual_days_back} days - table={table_name}")
                 
                 # Remove duplicates from DataFrame before insert
                 if not df.empty:
